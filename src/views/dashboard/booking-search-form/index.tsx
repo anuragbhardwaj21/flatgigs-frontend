@@ -88,6 +88,7 @@ const BookingSearchForm = () => {
         disabled={!canSearch}
         onClick={submitSearch}
         startIcon={<IconSearch size={24} />}
+        loading={isSearching}
         className={cn(
           "h-full! w-40! rounded-xl! bg-main/50! font-bold! text-black/70!",
           !canSearch && "cursor-not-allowed! opacity-50!",
