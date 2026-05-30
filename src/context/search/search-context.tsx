@@ -27,6 +27,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 const RESULTS_PATH = "/results";
 
+export type SearchSource = "form" | "chat";
+
 type SearchContextValue = {
   searchInputs: SearchInputs;
   formik: FormikProps<SearchInputs>;
@@ -36,6 +38,8 @@ type SearchContextValue = {
   submitSearch: () => void;
   refreshSearch: (patch?: SearchInputPatch) => void;
   searchData: SearchData | null;
+  searchSource: SearchSource;
+  setChatSearchData: (data: SearchData) => void;
   isSearching: boolean;
   searchError: string | null;
 };
@@ -47,6 +51,7 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
   const { pathname } = useLocation();
   const [triggerSearch, { isFetching }] = useLazySearchQuery();
   const [searchData, setSearchData] = useState<SearchData | null>(null);
+  const [searchSource, setSearchSource] = useState<SearchSource>("form");
   const [searchError, setSearchError] = useState<string | null>(null);
   const hasRestoredResultsRef = useRef(false);
 
@@ -59,6 +64,7 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
 
       try {
         const result = await triggerSearch(query).unwrap();
+        setSearchSource("form");
         setSearchData(result);
         persistSearchInputs(values);
         if (options?.navigate) navigate(RESULTS_PATH);
@@ -102,6 +108,7 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
       setSearchError(null);
       try {
         const result = await triggerSearch(query).unwrap();
+        setSearchSource("form");
         setSearchData(result);
       } catch {
         setSearchError("Search failed. Please try again.");
@@ -109,6 +116,13 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
       }
     })();
   }, [pathname, searchData, formik.values, triggerSearch]);
+
+  const setChatSearchData = useCallback((data: SearchData) => {
+    setSearchError(null);
+    setSearchSource("chat");
+    setSearchData(data);
+    hasRestoredResultsRef.current = true;
+  }, []);
 
   const setSearchInput = useCallback(
     (patch: SearchInputPatch) => {
@@ -152,6 +166,8 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
       submitSearch,
       refreshSearch,
       searchData,
+      searchSource,
+      setChatSearchData,
       isSearching: isFetching || formik.isSubmitting,
       searchError,
     }),
@@ -163,6 +179,8 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
       submitSearch,
       refreshSearch,
       searchData,
+      searchSource,
+      setChatSearchData,
       isFetching,
       searchError,
     ],

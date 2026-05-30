@@ -1,5 +1,6 @@
 import BrandIcon from "@/components/atoms/brand-icon";
 import RenderInput from "@/components/molecules/render-input";
+import { useChat } from "@/context/chat";
 import { useIcon } from "@/hooks/use-icons";
 import cn from "@/utils/cn";
 import { Button } from "@mui/material";
@@ -25,10 +26,11 @@ const AskAiBookingBar = ({ className }: { className?: string }) => {
   const IconSend = useIcon("send");
   const IconStars = useIcon("stars");
   const reduceMotion = useReducedMotion();
+  const { sendMessage, isWsReady, isBusy, lastError } = useChat();
   const [query, setQuery] = useState("");
   const [hintIndex, setHintIndex] = useState(0);
 
-  const canSubmit = query.trim().length > 0;
+  const canSubmit = query.trim().length > 0 && isWsReady && !isBusy;
 
   useEffect(() => {
     if (query.trim() || reduceMotion) return;
@@ -42,8 +44,10 @@ const AskAiBookingBar = ({ className }: { className?: string }) => {
 
   const handleSubmit = useCallback(() => {
     const trimmed = query.trim();
-    if (!trimmed) return;
-  }, [query]);
+    if (!trimmed || !isWsReady || isBusy) return;
+    sendMessage(trimmed);
+    setQuery("");
+  }, [query, sendMessage, isWsReady, isBusy]);
 
   return (
     <motion.div
@@ -215,6 +219,12 @@ const AskAiBookingBar = ({ className }: { className?: string }) => {
           </motion.div>
         </div>
       </div>
+
+      {lastError ? (
+        <p className="mt-2 text-center text-sm text-red-600" role="alert">
+          {lastError}
+        </p>
+      ) : null}
     </motion.div>
   );
 };

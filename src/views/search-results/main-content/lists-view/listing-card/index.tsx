@@ -98,6 +98,12 @@ const ListingCard = ({ listing }: ListingCardProps) => {
             </h3>
           </CustomTooltip>
 
+          {listing.rationale ? (
+            <p className="line-clamp-2 text-sm leading-snug text-main/90">
+              {listing.rationale}
+            </p>
+          ) : null}
+
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-black/60">
             {hasRating ? (
               <span className="inline-flex items-center gap-1 font-medium text-black/75">

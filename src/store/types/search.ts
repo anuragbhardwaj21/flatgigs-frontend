@@ -42,6 +42,7 @@ export type SearchListingItem = {
   latitude: number;
   longitude: number;
   distanceKm?: number;
+  rationale?: string;
 };
 
 export type SearchMapPin = {
