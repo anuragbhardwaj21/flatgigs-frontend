@@ -1,11 +1,14 @@
+import { useSearch } from "@/context/search";
 import ListsView from "@/views/search-results/main-content/lists-view";
 import MapView from "@/views/search-results/main-content/map-view";
 
 const MainContent = () => {
+  const { viewType } = useSearch();
+
   return (
-    <div className="flex min-h-0 flex-1 gap-4 rounded-2xl border border-main/20 bg-white p-4 shadow-lg">
+    <div className="flex min-h-0 flex-1 gap-4">
       <ListsView />
-      <MapView />
+      {viewType === "map" && <MapView />}
     </div>
   );
 };

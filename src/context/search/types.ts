@@ -11,6 +11,8 @@ export type SearchChipFilters = Partial<
 
 export type SearchSort = NonNullable<SearchQuery["sort"]>;
 
+export type SearchViewType = "list" | "map";
+
 export type SearchInputs = {
   city: string;
   checkIn: string;
@@ -21,6 +23,7 @@ export type SearchInputs = {
   priceRange?: [number, number];
   chips?: SearchChipFilters;
   sort?: SearchSort;
+  viewType?: SearchViewType;
   page?: number;
   limit?: number;
   includeMapPins?: boolean;

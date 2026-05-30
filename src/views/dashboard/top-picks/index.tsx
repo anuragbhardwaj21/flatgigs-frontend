@@ -9,6 +9,7 @@ import { FreeMode, Mousewheel } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperInstance } from "swiper";
 import "swiper/css";
+import RenderImage from "@/components/molecules/render-image";
 
 const SKELETON_COUNT = 10;
 
@@ -20,6 +21,11 @@ const imageHoverTransition = {
   stiffness: 90,
   damping: 20,
   mass: 0.8,
+} as const;
+
+const imageVariants = {
+  rest: { scale: 1 },
+  hover: { scale: 1.08 },
 } as const;
 
 const TopPicks = () => {
@@ -113,16 +119,7 @@ const TopPicks = () => {
                   initial="rest"
                   whileHover="hover"
                 >
-                  <motion.img
-                    variants={{
-                      rest: { scale: 1 },
-                      hover: { scale: 1.1 },
-                    }}
-                    transition={imageHoverTransition}
-                    src={pick.photo}
-                    alt={pick.name}
-                    className="size-full origin-center object-cover will-change-transform"
-                  />
+                  <RenderImage url={pick.photo} className="size-full origin-center object-cover will-change-transform hover:scale-105 transition-transform duration-300 ease-out" />
                   <div
                     className={cn(
                       "pointer-events-none absolute inset-0 z-10 flex flex-col items-start justify-between",
@@ -134,9 +131,8 @@ const TopPicks = () => {
                       <IconButton
                         type="button"
                         aria-label="Save to favorites"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          console.log("favorite", pick.id, pick.name);
+                        onClick={(event) => {
+                          event.stopPropagation();
                         }}
                         className="bg-black/20!"
                       >

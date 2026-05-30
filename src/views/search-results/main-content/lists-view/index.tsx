@@ -1,8 +1,6 @@
 import { useSearch } from "@/context/search";
 import ListingCard from "@/views/search-results/main-content/lists-view/listing-card";
-import ListingCardSkeleton, {
-  LISTING_SKELETON_COUNT,
-} from "@/views/search-results/skeleton/listing-card-skeleton";
+import { ListsViewSkeleton } from "@/views/search-results/skeleton/listing-card-skeleton";
 import { AnimatePresence, motion } from "motion/react";
 
 const easeOut = [0.22, 1, 0.36, 1] as const;
@@ -35,19 +33,18 @@ const listItemStagger = {
 const ListsView = () => {
   const { searchData, isSearching } = useSearch();
   const items = searchData?.items ?? [];
-  const view = isSearching ? "loading" : items.length === 0 ? "empty" : "list";
+  const isInitialLoading = isSearching && items.length === 0;
+  const view = isInitialLoading
+    ? "loading"
+    : items.length === 0
+      ? "empty"
+      : "list";
 
   return (
     <AnimatePresence mode="wait" initial={false}>
       {view === "loading" && (
-        <motion.div
-          key="loading"
-          className="flex flex-col gap-4"
-          {...viewMotion}
-        >
-          {Array.from({ length: LISTING_SKELETON_COUNT }, (_, index) => (
-            <ListingCardSkeleton key={index} />
-          ))}
+        <motion.div key="loading" className="w-full min-w-0" {...viewMotion}>
+          <ListsViewSkeleton />
         </motion.div>
       )}
 

@@ -1,5 +1,10 @@
 import { buildSearchQuery } from "@/context/search/build-search-query";
-import type { SearchInputPatch, SearchInputs } from "@/context/search/types";
+import { DEFAULT_VIEW_TYPE } from "@/context/search/constants";
+import type {
+  SearchInputPatch,
+  SearchInputs,
+  SearchViewType,
+} from "@/context/search/types";
 import {
   loadPersistedSearchInputs,
   persistSearchInputs,
@@ -25,7 +30,9 @@ const RESULTS_PATH = "/results";
 type SearchContextValue = {
   searchInputs: SearchInputs;
   formik: FormikProps<SearchInputs>;
+  viewType: SearchViewType;
   setSearchInput: (patch: SearchInputPatch) => void;
+  setViewType: (viewType: SearchViewType) => void;
   submitSearch: () => void;
   refreshSearch: (patch?: SearchInputPatch) => void;
   searchData: SearchData | null;
@@ -126,11 +133,22 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
     [formik.values, runSearch],
   );
 
+  const viewType = formik.values.viewType ?? DEFAULT_VIEW_TYPE;
+
+  const setViewType = useCallback(
+    (nextViewType: SearchViewType) => {
+      void formik.setFieldValue("viewType", nextViewType);
+    },
+    [formik],
+  );
+
   const value = useMemo<SearchContextValue>(
     () => ({
       searchInputs: formik.values,
       formik,
+      viewType,
       setSearchInput,
+      setViewType,
       submitSearch,
       refreshSearch,
       searchData,
@@ -139,7 +157,9 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
     }),
     [
       formik,
+      viewType,
       setSearchInput,
+      setViewType,
       submitSearch,
       refreshSearch,
       searchData,

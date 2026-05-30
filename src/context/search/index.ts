@@ -2,6 +2,7 @@ export { SearchProvider, useSearch } from "./search-context";
 export { buildSearchQuery } from "./build-search-query";
 export {
   DEFAULT_SEARCH_SORT,
+  DEFAULT_VIEW_TYPE,
   SEARCH_PRICE_MAX,
   SEARCH_PRICE_MIN,
 } from "./constants";
@@ -17,4 +18,5 @@ export type {
   SearchInputPatch,
   SearchInputs,
   SearchSort,
+  SearchViewType,
 } from "./types";

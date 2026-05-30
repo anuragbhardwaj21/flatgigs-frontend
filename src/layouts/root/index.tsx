@@ -9,22 +9,22 @@ const RootLayout = () => {
   const mainRef = useRef<HTMLElement | null>(null);
   return (
     <SearchProvider>
-    <main
-      className="font-sans graph-bg-light fixed inset-0 overflow-auto h-dvh"
-      ref={mainRef}
-    >
-      <Header />
-      <Suspense
-        fallback={
-          <div className="main-container flex flex-1 items-center justify-center py-20">
-            <Spinner />
-          </div>
-        }
+      <main
+        className="font-sans graph-bg-light fixed inset-0 overflow-auto h-dvh"
+        ref={mainRef}
       >
-        <Outlet />
-      </Suspense>
-      <UiConfigDrawer dragConstraintsRef={mainRef} />
-    </main>
+        <Header />
+        <Suspense
+          fallback={
+            <div className="main-container flex flex-1 items-center justify-center py-20">
+              <Spinner />
+            </div>
+          }
+        >
+          <Outlet />
+        </Suspense>
+        <UiConfigDrawer dragConstraintsRef={mainRef} />
+      </main>
     </SearchProvider>
   );
 };

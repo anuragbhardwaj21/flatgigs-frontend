@@ -5,6 +5,7 @@ import CustomTooltip from "@/components/atoms/custom-tooltip";
 import { IconButton } from "@mui/material";
 import { motion } from "motion/react";
 import { memo } from "react";
+import RenderImage from "@/components/molecules/render-image";
 
 const PLACEHOLDER_IMAGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect fill='%23e8ebe9' width='400' height='300'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%239ca3af' font-family='sans-serif' font-size='14'%3ENo image%3C/text%3E%3C/svg%3E";
@@ -54,12 +55,7 @@ const ListingCard = ({ listing }: ListingCardProps) => {
       )}
     >
       <div className="relative aspect-5/3 w-full shrink-0 overflow-hidden sm:aspect-auto sm:min-h-48 sm:w-56 md:w-64 lg:w-72">
-        <img
-          src={coverPhoto}
-          alt={listing.name}
-          loading="lazy"
-          className="absolute inset-0 size-full object-cover"
-        />
+        <RenderImage url={coverPhoto} className="absolute inset-0 size-full object-cover" />
         <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-transparent" />
         <div className="absolute left-3 top-3">
           <span className="rounded-full bg-black/55 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">

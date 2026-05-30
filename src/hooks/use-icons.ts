@@ -17,6 +17,7 @@ import { GoChevronLeft } from "react-icons/go";
 import { GoChevronRight } from "react-icons/go";
 import { VscHeart } from "react-icons/vsc";
 import { VscHeartFilled } from "react-icons/vsc";
+import { FaStar } from "react-icons/fa6";
 
 export const ICON_REGISTRY = {
   search: CiSearch,
@@ -35,6 +36,7 @@ export const ICON_REGISTRY = {
   chevronRight: GoChevronRight,
   heart: VscHeart,
   heartFilled: VscHeartFilled,
+  star: FaStar,
 } as const satisfies Record<string, IconType>;
 
 export type IconName = keyof typeof ICON_REGISTRY;
