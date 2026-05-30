@@ -3,7 +3,7 @@ import { useIcon } from "@/hooks/use-icons";
 import cn from "@/utils/cn";
 import { IconButton, TextField } from "@mui/material";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useCallback, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 const QUICK_PROMPTS = [
   "2 adults in Lisbon, June 1–5",
@@ -12,12 +12,31 @@ const QUICK_PROMPTS = [
 ];
 
 const spring = { type: "spring", stiffness: 420, damping: 26 } as const;
+const DRAWER_FOCUS_DELAY_MS = 380;
 
 const ChatComposer = () => {
   const IconSend = useIcon("send");
   const reduceMotion = useReducedMotion();
-  const { sendMessage, status, isWsReady, isBusy, lastError } = useChat();
+  const { sendMessage, status, isWsReady, isBusy, lastError, drawerOpen } = useChat();
   const [draft, setDraft] = useState("");
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+
+  const focusInput = useCallback(() => {
+    const node = inputRef.current;
+    if (!node || node.disabled) return;
+    node.focus({ preventScroll: true });
+  }, []);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const id = window.setTimeout(focusInput, DRAWER_FOCUS_DELAY_MS);
+    return () => window.clearTimeout(id);
+  }, [drawerOpen, focusInput]);
+
+  useEffect(() => {
+    if (!drawerOpen || isBusy) return;
+    focusInput();
+  }, [drawerOpen, isBusy, focusInput]);
 
   const canSend = draft.trim().length > 0 && isWsReady && !isBusy;
 
@@ -26,7 +45,8 @@ const ChatComposer = () => {
     if (!trimmed || !isWsReady || isBusy) return;
     sendMessage(trimmed);
     setDraft("");
-  }, [draft, sendMessage, isWsReady, isBusy]);
+    window.requestAnimationFrame(focusInput);
+  }, [draft, sendMessage, isWsReady, isBusy, focusInput]);
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== "Enter" || event.shiftKey) return;
@@ -68,6 +88,7 @@ const ChatComposer = () => {
         )}
       >
         <TextField
+          inputRef={inputRef}
           multiline
           maxRows={4}
           minRows={1}

@@ -221,7 +221,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
           }
 
           setChatSearchData(normalizeAssistantResults(data));
-          setDrawerOpen(true);
+          setDrawerOpen(false);
           navigate(RESULTS_PATH);
           break;
         }

@@ -29,7 +29,7 @@ const TypingIndicator = () => (
     exit={{ opacity: 0, y: -6 }}
     className="mr-auto flex max-w-[88%] items-end gap-2"
   >
-    <div className="shrink-0 rounded-lg border border-main/20 bg-main/5 p-1">
+    <div className="shrink-0 rounded-lg bg-main/5">
       <BrandIcon />
     </div>
     <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-main/15 bg-main/5 px-4 py-3">
@@ -91,7 +91,7 @@ const ChatMessageList = ({
           <motion.div
             animate={reduceMotion ? undefined : { scale: [1, 1.04, 1] }}
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            className="rounded-2xl border border-main/15 bg-main/5 p-3"
+            className="rounded-2xl bg-main/5"
           >
             <BrandIcon />
           </motion.div>
