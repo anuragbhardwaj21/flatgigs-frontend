@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Manrope", ui-sans-serif, sans-serif;
+
+  /* Primary */
+  --color-main: var(--mui-palette-primary-main);
+
+  /* Background */
+  --color-background: var(--mui-palette-background-default);
+  --color-background-paper: var(--mui-palette-background-paper);
+
+  /* Success */
+  --color-success-main: var(--mui-palette-success-main);
+  --color-success-light: var(--mui-palette-success-light);
+  --color-success-dark: var(--mui-palette-success-dark);
+  --color-success-contrast: var(--mui-palette-success-contrastText);
+
+  /* Info */
+  --color-info-main: var(--mui-palette-info-main);
+  --color-info-light: var(--mui-palette-info-light);
+  --color-info-dark: var(--mui-palette-info-dark);
+  --color-info-contrast: var(--mui-palette-info-contrastText);
+
+  /* Warning */
+  --color-warning-main: var(--mui-palette-warning-main);
+  --color-warning-light: var(--mui-palette-warning-light);
+  --color-warning-dark: var(--mui-palette-warning-dark);
+  --color-warning-contrast: var(--mui-palette-warning-contrastText);
+
+  /* Error */
+  --color-error-main: var(--mui-palette-error-main);
+  --color-error-light: var(--mui-palette-error-light);
+  --color-error-dark: var(--mui-palette-error-dark);
+  --color-error-contrast: var(--mui-palette-error-contrastText);
+
+}
+
+@layer base {
+  /* Hide global scrollbar while preserving scroll */
+  html {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  html::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+
+  /* Hide all scrollbars globally, including nested scroll containers */
+  * {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  *::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box !important;
+  }
+
+  html,
+  body,
+  #root {
+    font-family: var(--font-sans);
+    font-style: normal; 
+    @apply text-black/75;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  * {
+    @apply border-main/40;
+  }
+
+  * {
+    transition:
+      color 150ms ease-in-out,
+      background-color 150ms ease-in-out,
+      border-color 150ms ease-in-out;
+  }
+}
+
+@layer utilities {
+  .main-container {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 1440px;
+    padding-inline: theme(spacing.4);
+  }
+
+  @media (min-width: theme(screens.2xl)) {
+    .main-container {
+      padding-inline: theme(spacing.5); /* 1.25rem = 20px */
+    }
+  }
+}
+
+.graph-bg-dark {
+  background-color: var(--color-background);
+
+  background-image:
+    radial-gradient(
+      circle at center,
+      color-mix(in srgb, var(--color-main) 25%, transparent),
+      transparent 60%
+    ),
+    linear-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.09) 1px, transparent 1px);
+
+  background-size:
+    100% 100%,
+    15px 15px,
+    15px 15px;
+}
+
+.graph-bg-light {
+  background-color: var(--color-background);
+
+  background-image:
+    radial-gradient(
+      circle at center,
+      color-mix(in srgb, var(--color-main) 5%, transparent),
+      transparent 80%
+    ),
+    linear-gradient(rgba(0, 0, 0, 0.01) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.01) 1px, transparent 1px);
+
+  background-size:
+    100% 100%,
+    15px 15px,
+    15px 15px;
+}
