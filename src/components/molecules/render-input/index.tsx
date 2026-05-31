@@ -64,6 +64,7 @@ type RenderInputProps = {
   onDateClose?: () => void;
   minDate?: Dayjs;
   guestCount?: number;
+  maxGuests?: number;
   onGuestCountChange?: (count: number) => void;
 };
 
@@ -83,6 +84,7 @@ const RenderInput = ({
   onDateClose,
   minDate,
   guestCount,
+  maxGuests,
   onGuestCountChange,
 }: RenderInputProps) => {
   const Icon = useIcon(icon ?? "location");
@@ -207,8 +209,9 @@ const RenderInput = ({
             <button
               type="button"
               aria-label="Increase guests"
+              disabled={maxGuests != null && guests >= maxGuests}
               onClick={() => setGuests(guests + 1)}
-              className="flex size-7 cursor-pointer items-center justify-center rounded-full border border-black/20 bg-white hover:bg-black/10"
+              className="flex size-7 cursor-pointer items-center justify-center rounded-full border border-black/20 bg-white hover:bg-black/10 disabled:opacity-30"
             >
               <FiPlus />
             </button>

@@ -1,0 +1,20 @@
+.maplibregl-map {
+  font-family: inherit;
+}
+
+.maplibregl-ctrl-bottom-right,
+.maplibregl-ctrl-bottom-left {
+  display: none;
+}
+
+.maplibregl-marker {
+  z-index: 1;
+}
+
+.maplibregl-marker:hover {
+  z-index: 10;
+}
+
+.price-marker {
+  transform: translate(-50%, -100%);
+}

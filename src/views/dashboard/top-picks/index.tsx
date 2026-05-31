@@ -1,3 +1,4 @@
+import WishlistButton from "@/components/molecules/wishlist-button";
 import { useGetTopPicksQuery } from "@/store/services/listings-api";
 import { useIcon } from "@/hooks/use-icons";
 import cn from "@/utils/cn";
@@ -23,8 +24,6 @@ const TopPicks = () => {
   const StarsIcon = useIcon("stars");
   const ChevronLeftIcon = useIcon("chevronLeft");
   const ChevronRightIcon = useIcon("chevronRight");
-  const HeartIcon = useIcon("heart");
-
   const swiperRef = useRef<SwiperInstance | null>(null);
   const [isBeginning, setIsBeginning] = useState(true);
   const [isEnd, setIsEnd] = useState(false);
@@ -116,16 +115,11 @@ const TopPicks = () => {
                     )}
                   >
                     <div className="flex w-full items-center justify-end pointer-events-auto">
-                      <IconButton
-                        type="button"
-                        aria-label="Save to favorites"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                        }}
+                      <WishlistButton
+                        listingId={pick.id}
+                        listingName={pick.name}
                         className="bg-black/20!"
-                      >
-                        <HeartIcon className="text-lg text-main" />
-                      </IconButton>
+                      />
                     </div>
                     <div className="flex flex-col items-start justify-start gap-1">
                       <CustomTooltip title={pick.name}>

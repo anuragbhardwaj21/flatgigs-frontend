@@ -37,6 +37,7 @@ type SearchContextValue = {
   setViewType: (viewType: SearchViewType) => void;
   submitSearch: () => void;
   refreshSearch: (patch?: SearchInputPatch) => void;
+  refreshMapBounds: (bounds: string) => void;
   searchData: SearchData | null;
   searchSource: SearchSource;
   setChatSearchData: (data: SearchData) => void;
@@ -147,13 +148,28 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
     [formik.values, runSearch],
   );
 
+  const refreshMapBounds = useCallback(
+    (bounds: string) => {
+      void runSearch({ ...formik.values, bounds, includeMapPins: true });
+    },
+    [formik.values, runSearch],
+  );
+
   const viewType = formik.values.viewType ?? DEFAULT_VIEW_TYPE;
 
   const setViewType = useCallback(
     (nextViewType: SearchViewType) => {
       void formik.setFieldValue("viewType", nextViewType);
+      if (nextViewType === "map") {
+        void formik.setFieldValue("includeMapPins", true);
+        void runSearch({
+          ...formik.values,
+          viewType: nextViewType,
+          includeMapPins: true,
+        });
+      }
     },
-    [formik],
+    [formik, runSearch],
   );
 
   const value = useMemo<SearchContextValue>(
@@ -165,6 +181,7 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
       setViewType,
       submitSearch,
       refreshSearch,
+      refreshMapBounds,
       searchData,
       searchSource,
       setChatSearchData,
@@ -178,6 +195,7 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
       setViewType,
       submitSearch,
       refreshSearch,
+      refreshMapBounds,
       searchData,
       searchSource,
       setChatSearchData,

@@ -1,6 +1,7 @@
 import Chips from "@/components/atoms/chips";
 import BookingSearchForm from "@/views/dashboard/booking-search-form";
 import AskAiBookingBar from "@/views/dashboard/ask-ai-booking-bar";
+import HowItWorks from "@/views/dashboard/how-it-works";
 import TopPicks from "@/views/dashboard/top-picks";
 
 const Dashboard = () => {
@@ -29,6 +30,7 @@ const Dashboard = () => {
         text="Try: 'Quiet 1-bed in Lisbon near good restaurants under €130, balcony if possible'"
       />
       <TopPicks />
+      <HowItWorks />
     </div>
   );
 };

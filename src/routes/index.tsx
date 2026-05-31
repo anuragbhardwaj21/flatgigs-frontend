@@ -9,6 +9,7 @@ import Dashboard from "../pages/dashboard";
 import SearchResultsSkeleton from "@/views/search-results/skeleton";
 
 const SearchResults = lazy(() => import("../pages/search-results"));
+const ListingDetail = lazy(() => import("../pages/listing-detail"));
 
 const rootRoutes: RouteObject[] = [
   {
@@ -24,6 +25,14 @@ const rootRoutes: RouteObject[] = [
         element: (
           <Suspense fallback={<SearchResultsSkeleton />}>
             <SearchResults />
+          </Suspense>
+        ),
+      },
+      {
+        path: "results/:id",
+        element: (
+          <Suspense fallback={null}>
+            <ListingDetail />
           </Suspense>
         ),
       },

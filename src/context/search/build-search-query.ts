@@ -47,7 +47,9 @@ export const buildSearchQuery = (inputs: SearchInputs): SearchQuery | null => {
   if (inputs.bounds) query.bounds = inputs.bounds;
   if (inputs.page != null) query.page = inputs.page;
   if (inputs.limit != null) query.limit = inputs.limit;
-  if (inputs.includeMapPins != null) {
+  if (inputs.viewType === "map" || inputs.includeMapPins) {
+    query.includeMapPins = true;
+  } else if (inputs.includeMapPins != null) {
     query.includeMapPins = inputs.includeMapPins;
   }
 

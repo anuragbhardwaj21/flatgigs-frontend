@@ -3,7 +3,7 @@ import { useIcon } from "@/hooks/use-icons";
 import { Button } from "@mui/material";
 
 const Header = () => {
-  const IconSearch = useIcon("search");
+  const IconHeart = useIcon("heart");
   return (
     <div className="border-b border-dashed p-2 bg-background-paper">
       <div className="main-container flex items-center justify-between">
@@ -11,9 +11,9 @@ const Header = () => {
         <Button
           variant="text"
           color="primary"
-          startIcon={<IconSearch className="text-xl" />}
+          startIcon={<IconHeart className="text-xl" />}
         >
-          Search
+          Wishlist
         </Button>
       </div>
     </div>

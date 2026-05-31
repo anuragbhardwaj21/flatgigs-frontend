@@ -1,7 +1,10 @@
+import { useMapResults } from "@/context/map-results";
 import { useSearch } from "@/context/search";
+import cn from "@/utils/cn";
 import ListingCard from "@/views/search-results/main-content/lists-view/listing-card";
 import { ListsViewSkeleton } from "@/views/search-results/skeleton/listing-card-skeleton";
 import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useRef } from "react";
 
 const easeOut = [0.22, 1, 0.36, 1] as const;
 
@@ -30,8 +33,14 @@ const listItemStagger = {
   },
 };
 
-const ListsView = () => {
+type ListsViewProps = {
+  variant?: "full" | "split";
+};
+
+const ListsView = ({ variant = "full" }: ListsViewProps) => {
   const { searchData, isSearching } = useSearch();
+  const { hoveredListingId, setHoveredListingId } = useMapResults();
+  const listRef = useRef<HTMLUListElement>(null);
   const items = searchData?.items ?? [];
   const isInitialLoading = isSearching && items.length === 0;
   const view = isInitialLoading
@@ -39,6 +48,19 @@ const ListsView = () => {
     : items.length === 0
       ? "empty"
       : "list";
+
+  useEffect(() => {
+    if (!hoveredListingId || !listRef.current) return;
+    const card = listRef.current.querySelector(
+      `[data-listing-id="${hoveredListingId}"]`,
+    );
+    card?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [hoveredListingId]);
+
+  const listClassName = cn(
+    "flex w-full flex-col gap-4",
+    variant === "split" && "gap-3",
+  );
 
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -63,16 +85,27 @@ const ListsView = () => {
       )}
 
       {view === "list" && (
-        <motion.div key="list" {...viewMotion} className="w-full">
+        <motion.div key="list" {...viewMotion} className="w-full min-w-0">
           <motion.ul
-            className="flex flex-col gap-4 w-full"
+            ref={listRef}
+            className={listClassName}
             variants={listStagger}
             initial="hidden"
             animate="visible"
           >
             {items.map((listing) => (
-              <motion.li key={listing.id} variants={listItemStagger}>
-                <ListingCard listing={listing} />
+              <motion.li
+                key={listing.id}
+                variants={listItemStagger}
+                data-listing-id={listing.id}
+              >
+                <ListingCard
+                  listing={listing}
+                  compact={variant === "split"}
+                  highlighted={hoveredListingId === listing.id}
+                  onHover={() => setHoveredListingId(listing.id)}
+                  onLeave={() => setHoveredListingId(null)}
+                />
               </motion.li>
             ))}
           </motion.ul>

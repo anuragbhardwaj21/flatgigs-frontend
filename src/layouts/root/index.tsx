@@ -1,6 +1,7 @@
 import { Suspense, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import Spinner from "@/components/atoms/spinner";
+import WishlistPrefetch from "@/components/molecules/wishlist-prefetch";
 import ChatDrawer from "@/components/organisms/chat-drawer";
 import Header from "@/components/organisms/header";
 import { ChatProvider } from "@/context/chat";
@@ -11,6 +12,7 @@ const RootLayout = () => {
   return (
     <SearchProvider>
       <ChatProvider>
+        <WishlistPrefetch />
         <main
           className="font-sans graph-bg-light fixed inset-0 overflow-auto h-dvh"
           ref={mainRef}

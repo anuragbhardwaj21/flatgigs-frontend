@@ -3,6 +3,7 @@ import { setupListeners } from "@reduxjs/toolkit/query/react";
 import { api } from "./api";
 import "./services/listings-api";
 import "./services/search-api";
+import "./services/wishlist-api";
 
 export const store = configureStore({
   reducer: {

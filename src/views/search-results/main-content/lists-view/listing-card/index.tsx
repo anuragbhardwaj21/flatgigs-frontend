@@ -1,10 +1,11 @@
+import WishlistButton from "@/components/molecules/wishlist-button";
 import { useIcon } from "@/hooks/use-icons";
 import type { SearchListingItem } from "@/store/types/search";
 import cn from "@/utils/cn";
 import CustomTooltip from "@/components/atoms/custom-tooltip";
-import { IconButton } from "@mui/material";
 import { motion } from "motion/react";
-import { memo } from "react";
+import { memo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import RenderImage from "@/components/molecules/render-image";
 
 const PLACEHOLDER_IMAGE =
@@ -31,11 +32,21 @@ const cardHoverTransition = {
 
 type ListingCardProps = {
   listing: SearchListingItem;
+  compact?: boolean;
+  highlighted?: boolean;
+  onHover?: () => void;
+  onLeave?: () => void;
 };
 
-const ListingCard = ({ listing }: ListingCardProps) => {
+const ListingCard = ({
+  listing,
+  compact = false,
+  highlighted = false,
+  onHover,
+  onLeave,
+}: ListingCardProps) => {
+  const navigate = useNavigate();
   const StarsIcon = useIcon("stars");
-  const HeartIcon = useIcon("heart");
   const LocationIcon = useIcon("location");
 
   const coverPhoto = listing.photos[0] ?? PLACEHOLDER_IMAGE;
@@ -43,18 +54,44 @@ const ListingCard = ({ listing }: ListingCardProps) => {
   const hiddenAmenities = listing.amenities.slice(MAX_VISIBLE_AMENITIES);
   const hasRating = listing.rating != null && listing.rating > 0;
 
+  const openDetail = useCallback(() => {
+    navigate(`/results/${listing.id}`);
+  }, [navigate, listing.id]);
+
   return (
     <motion.article
       initial={false}
       whileHover={{ y: -2 }}
       transition={cardHoverTransition}
+      onClick={openDetail}
+      onMouseEnter={onHover}
+      onMouseLeave={onLeave}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openDetail();
+        }
+      }}
+      role="link"
+      tabIndex={0}
+      aria-label={`View details for ${listing.name}`}
       className={cn(
-        "group flex w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-main/15 bg-background-paper",
-        "shadow-sm transition-[box-shadow,border-color] duration-500 ease-out hover:border-main/35 hover:shadow-lg",
-        "sm:flex-row sm:items-stretch",
+        "group flex w-full cursor-pointer flex-col overflow-hidden rounded-2xl border bg-background-paper",
+        "shadow-sm transition-[box-shadow,border-color,ring-color] duration-300 ease-out hover:shadow-lg",
+        highlighted
+          ? "border-main/40 ring-2 ring-main/35 shadow-md"
+          : "border-main/15 hover:border-main/35",
+        compact ? "sm:flex-row sm:items-stretch" : "sm:flex-row sm:items-stretch",
       )}
     >
-      <div className="relative aspect-5/3 w-full shrink-0 overflow-hidden sm:aspect-auto sm:min-h-48 sm:w-56 md:w-64 lg:w-72">
+      <div
+        className={cn(
+          "relative aspect-5/3 w-full shrink-0 overflow-hidden",
+          compact
+            ? "sm:aspect-auto sm:min-h-36 sm:w-44"
+            : "sm:aspect-auto sm:min-h-48 sm:w-56 md:w-64 lg:w-72",
+        )}
+      >
         <RenderImage url={coverPhoto} className="absolute inset-0 size-full object-cover" />
         <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-transparent" />
         <div className="absolute left-3 top-3">
@@ -62,15 +99,11 @@ const ListingCard = ({ listing }: ListingCardProps) => {
             {formatLabel(listing.propertyType)}
           </span>
         </div>
-        <IconButton
-          type="button"
-          aria-label={`Save ${listing.name}`}
-          onClick={(event) => event.stopPropagation()}
-          className="absolute! right-2! top-2! bg-black/25! text-white! hover:bg-black/40!"
-          size="small"
-        >
-          <HeartIcon className="text-lg text-main" />
-        </IconButton>
+        <WishlistButton
+          listingId={listing.id}
+          listingName={listing.name}
+          className="absolute! right-2! top-2!"
+        />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col justify-between gap-2.5 p-3 sm:gap-3 sm:p-4 md:p-5">
