@@ -23,22 +23,8 @@ const TypingIndicator = () => (
   >
     <AssistantAvatar />
     <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-main/15 bg-main/5 px-4 py-3">
-      <span className="flex gap-1">
-        {[0, 1, 2].map((i) => (
-          <motion.span
-            key={i}
-            className="size-1.5 rounded-full bg-main/50"
-            animate={{ opacity: [0.35, 1, 0.35], y: [0, -3, 0] }}
-            transition={{
-              duration: 0.9,
-              repeat: Infinity,
-              delay: i * 0.15,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-      </span>
-      <span className="text-xs text-black/50">Concierge is working…</span>
+      <Spinner  className="bg-main/70"/>
+      <span className="text-xs text-black/50">Connecting...</span>
     </div>
   </motion.div>
 );
