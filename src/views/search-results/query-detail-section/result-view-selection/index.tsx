@@ -1,5 +1,6 @@
 import CustomTabs from "@/components/molecules/custom-tabs";
 import { useSearch } from "@/context/search";
+import type { SearchViewType } from "@/context/search";
 import { useDayjs } from "@/hooks/use-dayjs";
 import { useIcon } from "@/hooks/use-icons";
 import { Divider } from "@mui/material";
@@ -42,7 +43,11 @@ const ResultViewSelection = () => {
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <CustomTabs value={viewType} onValueChange={setViewType} width={200}>
+        <CustomTabs
+          value={viewType}
+          onValueChange={(next) => setViewType(next as SearchViewType)}
+          width={200}
+        >
           <CustomTabs.Tab
             value="list"
             startIcon={<GridIcon className="text-base" />}

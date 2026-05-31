@@ -16,18 +16,6 @@ const SKELETON_COUNT = 10;
 const slideClassName =
   "relative aspect-4/5! w-60! overflow-hidden! rounded-2xl";
 
-const imageHoverTransition = {
-  type: "spring",
-  stiffness: 90,
-  damping: 20,
-  mass: 0.8,
-} as const;
-
-const imageVariants = {
-  rest: { scale: 1 },
-  hover: { scale: 1.08 },
-} as const;
-
 const TopPicks = () => {
   const { data, isLoading, isError } = useGetTopPicksQuery(undefined, {
     refetchOnMountOrArgChange: true,

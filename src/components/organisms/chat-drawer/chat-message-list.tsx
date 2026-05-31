@@ -5,17 +5,6 @@ import cn from "@/utils/cn";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef } from "react";
 
-const formatTime = (iso: string) => {
-  try {
-    return new Intl.DateTimeFormat(undefined, {
-      hour: "numeric",
-      minute: "2-digit",
-    }).format(new Date(iso));
-  } catch {
-    return "";
-  }
-};
-
 const messageVariants = {
   hidden: { opacity: 0, y: 10, scale: 0.98 },
   visible: { opacity: 1, y: 0, scale: 1 },
