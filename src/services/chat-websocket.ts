@@ -5,21 +5,26 @@ export type ChatWsEventHandler = (frame: WsFrame<unknown>) => void;
 
 const getWsBaseUrl = (): string => {
   const explicit = (import.meta.env.VITE_WS_URL ?? "").trim();
-  if (explicit) return explicit.replace(/\/$/, "");
-
-  if (typeof window !== "undefined") {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    return `${protocol}//${window.location.host}/ws`;
+  if (explicit) {
+    const url = new URL(explicit.replace(/\/$/, "") + "/");
+    if (!url.pathname.endsWith("/ws")) url.pathname = "/ws";
+    return url.toString().replace(/\/$/, "");
   }
 
-  const apiTarget = (import.meta.env.VITE_API_PROXY_TARGET ?? "http://localhost:4000")
-    .trim()
-    .replace(/\/$/, "");
-  const url = new URL(apiTarget);
-  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-  url.pathname = "/ws";
-  url.search = "";
-  return url.toString().replace(/\/$/, "");
+  const apiTarget = (import.meta.env.VITE_API_PROXY_TARGET ?? "").trim();
+  if (apiTarget) {
+    const url = new URL(apiTarget.replace(/\/$/, "") + "/");
+    url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    url.pathname = "/ws";
+    url.search = "";
+    return url.toString().replace(/\/$/, "");
+  }
+
+  if (import.meta.env.DEV && typeof window !== "undefined") {
+    return `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`;
+  }
+
+  return "ws://localhost:4000/ws";
 };
 
 export const buildChatWebSocketUrl = (token: string): string => {
