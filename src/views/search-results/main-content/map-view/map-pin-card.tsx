@@ -66,7 +66,9 @@ const MapPinCard = ({ card, loading, className }: MapPinCardProps) => {
               ) : null}
             </>
           ) : (
-            <span className="text-[11px] font-medium text-black/45">per night</span>
+            <span className="text-[11px] font-medium text-black/45">
+              per night
+            </span>
           )}
         </div>
         <span className="shrink-0 text-sm font-bold tabular-nums text-black/85">

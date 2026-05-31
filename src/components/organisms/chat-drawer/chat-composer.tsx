@@ -81,10 +81,10 @@ const ChatComposer = () => {
 
       <div
         className={cn(
-          "flex items-end gap-2 rounded-2xl border bg-white/80 p-1.5 shadow-sm transition-[border-color,box-shadow] duration-300",
+          "flex items-end gap-2 rounded-2xl border w-full bg-white/80 p-1.5 shadow-sm transition-[border-color,box-shadow] duration-300",
           canSend
             ? "border-main/35 shadow-[0_8px_24px_-12px_color-mix(in_srgb,var(--color-main)_40%,transparent)]"
-            : "border-main/15",
+            : "border-main",
         )}
       >
         <TextField

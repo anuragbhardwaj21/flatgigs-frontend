@@ -236,18 +236,6 @@ const ChatDrawer = ({
                   <h2 className="text-base font-semibold tracking-tight text-black/90">
                     AI Concierge
                   </h2>
-                  <AnimatePresence mode="wait" initial={false}>
-                    <motion.p
-                      key={statusLabel}
-                      initial={reduceMotion ? false : { opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={reduceMotion ? undefined : { opacity: 0, y: -4 }}
-                      className="text-xs text-black/50"
-                    >
-                      {statusLabel}
-                      {status === "clarifying" ? " — reply below" : ""}
-                    </motion.p>
-                  </AnimatePresence>
                 </div>
               </div>
 

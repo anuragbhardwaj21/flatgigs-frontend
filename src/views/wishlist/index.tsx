@@ -60,10 +60,16 @@ const WishlistCard = ({ item }: { item: WishlistListing }) => {
           className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         />
         <div className="absolute right-2 top-2 flex gap-1">
-          <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+          <span
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
             <CompareAddButton listing={listing} />
           </span>
-          <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+          <span
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
             <WishlistButton listingId={item.id} listingName={item.name} />
           </span>
         </div>
@@ -144,15 +150,23 @@ const WishlistView = () => {
       {isLoading ? (
         <div className={cn("grid gap-4 sm:grid-cols-2 lg:grid-cols-3")}>
           {Array.from({ length: 6 }, (_, i) => (
-            <Skeleton key={i} variant="rectangular" className="aspect-4/5! rounded-2xl!" />
+            <Skeleton
+              key={i}
+              variant="rectangular"
+              className="aspect-4/5! rounded-2xl!"
+            />
           ))}
         </div>
       ) : isError ? (
-        <p className="text-center text-sm text-red-600">Could not load wishlist.</p>
+        <p className="text-center text-sm text-red-600">
+          Could not load wishlist.
+        </p>
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-20 text-center">
           <HeartIcon className="text-4xl text-main/40" />
-          <p className="text-lg font-semibold text-black/75">No saved stays yet</p>
+          <p className="text-lg font-semibold text-black/75">
+            No saved stays yet
+          </p>
           <p className="max-w-sm text-sm text-black/50">
             Tap the heart on any listing to save it here.
           </p>

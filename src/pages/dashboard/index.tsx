@@ -53,7 +53,7 @@ const Dashboard = () => {
 
           <p className="mt-4 max-w-xl text-pretty text-sm leading-relaxed text-black/50 sm:text-base">
             Describe the trip you want. Our concierge searches, compares
-            reviews, and plans the days — so you just book.
+            reviews, and plans the days, so you just book.
           </p>
         </motion.section>
 

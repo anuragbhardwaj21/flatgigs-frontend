@@ -1,13 +1,15 @@
 import { useChat } from "@/context/chat";
 import type { AssistantAgent } from "@/store/types/chat";
 import cn from "@/utils/cn";
-import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useRef } from "react";
 
 const AGENT_LABELS: Record<string, string> = {
   concierge: "Concierge",
   retrieval: "Retrieval",
   review: "Review",
 };
+
+const MAX_HISTORY_STEPS = 3;
 
 const agentColor = (agent?: AssistantAgent) => {
   switch (agent) {
@@ -23,71 +25,89 @@ const agentColor = (agent?: AssistantAgent) => {
 
 const AgentStatusTimeline = () => {
   const { agentTimeline, activeStatus, isBusy, statusLabel } = useChat();
+  const listRef = useRef<HTMLOListElement>(null);
 
-  if (!isBusy && agentTimeline.length === 0) return null;
+  const currentLabel = activeStatus?.label ?? (isBusy ? statusLabel : null);
+  const progress = activeStatus?.progress;
+  const historySteps = agentTimeline
+    .filter((step) => step.status === "done")
+    .slice(-MAX_HISTORY_STEPS);
+  const isVisible = isBusy || agentTimeline.length > 0;
 
-  const showActive = activeStatus?.label || statusLabel;
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    list.scrollTop = list.scrollHeight;
+  }, [agentTimeline.length, currentLabel]);
+
+  if (!isVisible) return null;
 
   return (
-    <div className="border-b border-main/10 bg-main/3 px-4 py-3">
-      {showActive ? (
-        <div className="mb-2 flex items-center gap-2">
+    <div className="shrink-0 border-b border-main/10 bg-main/3 px-4 py-2.5">
+      {(currentLabel || activeStatus?.agent || progress != null) && (
+        <div className="flex min-w-0 items-start gap-2">
           {activeStatus?.agent ? (
             <span
               className={cn(
-                "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                "mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
                 agentColor(activeStatus.agent),
               )}
             >
               {AGENT_LABELS[activeStatus.agent] ?? activeStatus.agent}
             </span>
           ) : null}
-          <span className="text-xs font-medium text-black/65">{showActive}</span>
-          {activeStatus?.progress != null ? (
-            <span className="ml-auto text-[10px] tabular-nums text-black/40">
-              {activeStatus.progress}%
+
+          <div className="min-w-0 flex-1">
+            {activeStatus?.detail ? (
+              <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-black/45">
+                {activeStatus.detail}
+              </p>
+            ) : null}
+          </div>
+
+          {progress != null ? (
+            <span className="shrink-0 pt-0.5 text-[10px] tabular-nums text-black/40">
+              {progress}%
             </span>
           ) : null}
         </div>
-      ) : null}
+      )}
 
-      {activeStatus?.progress != null ? (
-        <div className="mb-2 h-1 overflow-hidden rounded-full bg-black/6">
-          <motion.div
-            className="h-full rounded-full bg-main"
-            initial={{ width: 0 }}
-            animate={{ width: `${activeStatus.progress}%` }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
+      {progress != null ? (
+        <div
+          className="mt-2 h-0.5 overflow-hidden rounded-full bg-black/6"
+          role="progressbar"
+          aria-valuenow={progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div
+            className="h-full rounded-full bg-main transition-[width] duration-300 ease-out"
+            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
           />
         </div>
       ) : null}
 
-      {activeStatus?.detail ? (
-        <p className="mb-2 line-clamp-1 text-[11px] text-black/45">
-          {activeStatus.detail}
-        </p>
-      ) : null}
-
-      <AnimatePresence initial={false}>
-        <ul className="max-h-28 space-y-1 overflow-y-auto">
-          {agentTimeline.slice(-6).map((step) => (
-            <motion.li
+      {historySteps.length > 0 ? (
+        <ol
+          ref={listRef}
+          className="mt-2 max-h-16 space-y-1 overflow-hidden"
+          aria-label="Completed steps"
+        >
+          {historySteps.map((step) => (
+            <li
               key={step.id}
-              initial={{ opacity: 0, x: -6 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-start gap-2 text-[11px]"
+              className="flex min-w-0 items-start gap-2 text-[10px] leading-snug text-black/40"
             >
               <span
-                className={cn(
-                  "mt-1 size-1.5 shrink-0 rounded-full",
-                  step.status === "active" ? "bg-main" : "bg-black/25",
-                )}
+                className="mt-1.5 size-1 shrink-0 rounded-full bg-black/20"
+                aria-hidden
               />
-              <span className="text-black/55">{step.label}</span>
-            </motion.li>
+              <span className="min-w-0 flex-1 truncate">{step.label}</span>
+            </li>
           ))}
-        </ul>
-      </AnimatePresence>
+        </ol>
+      ) : null}
     </div>
   );
 };

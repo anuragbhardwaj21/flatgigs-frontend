@@ -6,7 +6,6 @@ import { useIcon } from "@/hooks/use-icons";
 import cn from "@/utils/cn";
 import CustomTooltip from "@/components/atoms/custom-tooltip";
 import { IconButton, Skeleton } from "@mui/material";
-import { motion } from "motion/react";
 import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FreeMode, Mousewheel } from "swiper/modules";
@@ -129,7 +128,7 @@ const TopPicks = () => {
                 <Skeleton
                   variant="rectangular"
                   animation="wave"
-                  className="h-full! w-full! rounded-[1.35rem]!"
+                  className="h-full! w-full! rounded-xl!"
                 />
               </SwiperSlide>
             ))
@@ -138,10 +137,8 @@ const TopPicks = () => {
                 key={pick.id}
                 className={cn(slideClassName, "cursor-pointer!")}
               >
-                <motion.div
-                  className="group relative size-full overflow-hidden rounded-[1.35rem] ring-1 ring-black/6"
-                  initial="rest"
-                  whileHover="hover"
+                <div
+                  className="group relative size-full overflow-hidden rounded-xl ring-1 ring-black/6"
                   role="link"
                   tabIndex={0}
                   onClick={() => navigate(`/results/${pick.id}`)}
@@ -154,9 +151,9 @@ const TopPicks = () => {
                 >
                   <RenderImage
                     url={pick.photo}
-                    className="size-full origin-center object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                    className="size-full origin-center object-cover"
                   />
-                  <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
+                  <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent" />
                   <div
                     className={cn(
                       "pointer-events-none absolute inset-0 z-10 flex flex-col items-start justify-between p-3 text-white",
@@ -164,7 +161,7 @@ const TopPicks = () => {
                   >
                     <div className="flex w-full items-center justify-between gap-1 pointer-events-auto">
                       {pick.badge ? (
-                        <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide backdrop-blur-sm">
+                        <span className="rounded-full bg-black/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide backdrop-blur-sm">
                           {pick.badge}
                         </span>
                       ) : (
@@ -205,7 +202,7 @@ const TopPicks = () => {
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               </SwiperSlide>
             ))}
       </Swiper>

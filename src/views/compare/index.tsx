@@ -24,13 +24,7 @@ const formatPrice = (amount: number) =>
 const formatLabel = (value: string) =>
   value.replace(/[_-]/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 
-const AspectBar = ({
-  label,
-  score,
-}: {
-  label: string;
-  score: number;
-}) => (
+const AspectBar = ({ label, score }: { label: string; score: number }) => (
   <div className="space-y-1">
     <div className="flex justify-between text-[11px] text-black/50">
       <span>{formatLabel(label)}</span>
@@ -140,7 +134,12 @@ const CompareView = () => {
       checkIn: searchInputs.checkIn,
       checkOut: searchInputs.checkOut,
     });
-  }, [compareListings, listingIds, searchInputs.checkIn, searchInputs.checkOut]);
+  }, [
+    compareListings,
+    listingIds,
+    searchInputs.checkIn,
+    searchInputs.checkOut,
+  ]);
 
   const photoById = useMemo(
     () =>
@@ -194,13 +193,13 @@ const CompareView = () => {
         </Button>
       </div>
 
-      {isLoading ? (
+      {!isLoading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {entries.map((entry) => (
             <Skeleton
               key={entry.id}
               variant="rectangular"
-              className="aspect-3/4! rounded-2xl!"
+              className="aspect-3/4! h-full! rounded-2xl!"
             />
           ))}
         </div>
