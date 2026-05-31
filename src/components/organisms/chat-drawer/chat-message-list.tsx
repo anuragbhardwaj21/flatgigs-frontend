@@ -129,7 +129,7 @@ const ChatMessageList = ({
                         "flex max-w-[85%] flex-col gap-1 items-end",
                       )}
                     >
-                      <div className="rounded-2xl rounded-br-md bg-main px-3.5 py-2.5 text-sm leading-relaxed text-white shadow-[0_6px_16px_-8px_color-mix(in_srgb,var(--color-main)_55%,transparent)]">
+                      <div className="rounded-2xl rounded-br-md bg-main px-3.5 py-2.5 text-sm font-semibold leading-relaxed text-white shadow-[0_6px_16px_-8px_color-mix(in_srgb,var(--color-main)_55%,transparent)]">
                         {message.content}
                       </div>
                     </div>

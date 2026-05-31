@@ -188,11 +188,15 @@ const TopPicks = () => {
                           {pick.name}
                         </span>
                       </CustomTooltip>
-                      <span className="text-[11px] text-white/75">{pick.city.name}</span>
+                      <span className="text-[11px] text-white/75">
+                        {pick.city.name}
+                      </span>
                       <div className="mt-1 flex items-center gap-2 text-[11px] text-white/80">
                         <span className="font-semibold tabular-nums">
                           €{pick.pricePerNight}
-                          <span className="font-normal text-white/60">/night</span>
+                          <span className="font-normal text-white/60">
+                            /night
+                          </span>
                         </span>
                         <span className="text-white/35">·</span>
                         <span className="tabular-nums">

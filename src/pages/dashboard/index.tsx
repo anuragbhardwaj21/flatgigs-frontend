@@ -52,8 +52,8 @@ const Dashboard = () => {
           </h1>
 
           <p className="mt-4 max-w-xl text-pretty text-sm leading-relaxed text-black/50 sm:text-base">
-            Describe the trip you want. Our concierge searches, compares reviews,
-            and plans the days — so you just book.
+            Describe the trip you want. Our concierge searches, compares
+            reviews, and plans the days — so you just book.
           </p>
         </motion.section>
 
@@ -68,7 +68,9 @@ const Dashboard = () => {
                   <StarsIcon className="size-3.5" aria-hidden />
                 </span>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-black/85">Plan your trip</p>
+                  <p className="text-sm font-semibold text-black/85">
+                    Plan your trip
+                  </p>
                   <p className="text-[11px] text-black/45">
                     Search traditionally or ask the concierge
                   </p>
@@ -88,10 +90,11 @@ const Dashboard = () => {
               <AskAiBookingBar embedded className="max-w-full pt-0" />
 
               <p className="mt-3 flex items-start justify-center gap-1.5 px-2 text-center text-[11px] leading-relaxed text-black/40">
-                <ChatIcon className="mt-0.5 size-3 shrink-0 text-main/60" aria-hidden />
-                <span>
-                  Try: &ldquo;{EXAMPLE_PROMPT}&rdquo;
-                </span>
+                <ChatIcon
+                  className="mt-0.5 size-3 shrink-0 text-main/60"
+                  aria-hidden
+                />
+                <span>Try: &ldquo;{EXAMPLE_PROMPT}&rdquo;</span>
               </p>
             </div>
           </div>
