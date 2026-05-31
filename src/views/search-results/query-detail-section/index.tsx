@@ -41,7 +41,7 @@ const QueryDetailSection = () => {
 
         <AssistantChipsRow />
 
-        <AskAiBookingBar compact className="max-w-full" />
+        <AskAiBookingBar className="max-w-full" />
 
         <AnimatePresence initial={false}>
           {filtersOpen ? (

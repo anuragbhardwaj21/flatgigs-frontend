@@ -15,8 +15,8 @@ const PLACEHOLDER_HINTS = [
 ];
 
 const entrance = {
-  initial: { opacity: 0, y: 14 },
-  animate: { opacity: 1, y: 0 },
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
   transition: { duration: 0.55, delay: 0.12, ease: [0.22, 1, 0.36, 1] },
 } as const;
 
@@ -61,7 +61,15 @@ const AskAiBookingBar = ({
 
   if (compact) {
     return (
-      <div className={cn("relative w-full", className)} aria-label="Ask AI concierge">
+      <div
+        className={cn(
+          "relative w-full",
+          className,
+          !isWsReady &&
+            "animate-pulse pointer-events-none cursor-not-allowed",
+        )}
+        aria-label="Ask AI concierge"
+      >
         <div className="flex h-8 items-center gap-2 rounded-lg border border-black/6 bg-background-paper px-2">
           <IconStars className="size-3.5 shrink-0 text-main/80" aria-hidden />
           <div className="relative min-w-0 flex-1">
@@ -128,6 +136,8 @@ const AskAiBookingBar = ({
         className={cn(
           "group/ai relative overflow-hidden",
           embedded ? "rounded-2xl" : "rounded-2xl p-[2px]",
+          !isWsReady &&
+            "opacity-80 animate-pulse pointer-events-none cursor-not-allowed",
         )}
         aria-label="Ask AI concierge"
       >
@@ -142,9 +152,7 @@ const AskAiBookingBar = ({
                 filter: "blur(12px)",
               }}
               animate={
-                reduceMotion
-                  ? undefined
-                  : { opacity: [0.45, 0.75, 0.45] }
+                reduceMotion ? undefined : { opacity: [0.45, 0.75, 0.45] }
               }
               transition={
                 reduceMotion
