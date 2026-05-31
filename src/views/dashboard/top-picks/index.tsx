@@ -18,7 +18,7 @@ import RenderImage from "@/components/molecules/render-image";
 const SKELETON_COUNT = 10;
 
 const slideClassName =
-  "relative aspect-4/5! w-60! overflow-hidden! rounded-2xl";
+  "relative aspect-4/5! w-56! overflow-hidden! rounded-[1.35rem] sm:w-60!";
 
 const pickToListing = (pick: {
   id: string;
@@ -68,33 +68,41 @@ const TopPicks = () => {
   if (!isLoading && (isError || topPicks.length === 0)) return null;
 
   return (
-    <section className="w-full pb-4">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <StarsIcon className="text-lg text-main" />
-          <h2 className="text-lg font-semibold text-black/80">Top picks</h2>
+    <section className="w-full">
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <div>
+          <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-main/75">
+            <StarsIcon className="size-3" aria-hidden />
+            Curated for you
+          </div>
+          <h2 className="text-xl font-bold tracking-tight text-black/85 sm:text-2xl">
+            Top picks
+          </h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <IconButton
             type="button"
             aria-label="Previous top picks"
             onClick={handlePrev}
             disabled={isBeginning}
-            className="shrink-0! bg-main/15! disabled:opacity-40!"
+            size="small"
+            className="size-8! border! border-black/6! bg-background-paper/80! disabled:opacity-35!"
           >
-            <ChevronLeftIcon className="text-lg text-main" />
+            <ChevronLeftIcon className="text-base text-black/70" />
           </IconButton>
           <IconButton
             type="button"
             aria-label="Next top picks"
             onClick={handleNext}
             disabled={isEnd}
-            className="shrink-0! bg-main/15! disabled:opacity-40!"
+            size="small"
+            className="size-8! border! border-black/6! bg-background-paper/80! disabled:opacity-35!"
           >
-            <ChevronRightIcon className="text-lg text-main" />
+            <ChevronRightIcon className="text-base text-black/70" />
           </IconButton>
         </div>
       </div>
+
       <Swiper
         modules={[Mousewheel, FreeMode]}
         onSwiper={(swiper) => {
@@ -111,8 +119,9 @@ const TopPicks = () => {
         }}
         freeMode={{ enabled: true }}
         speed={450}
-        spaceBetween={20}
+        spaceBetween={16}
         slidesPerView="auto"
+        className="overflow-visible!"
       >
         {isLoading
           ? Array.from({ length: SKELETON_COUNT }, (_, index) => (
@@ -120,7 +129,7 @@ const TopPicks = () => {
                 <Skeleton
                   variant="rectangular"
                   animation="wave"
-                  className="h-full! w-full!"
+                  className="h-full! w-full! rounded-[1.35rem]!"
                 />
               </SwiperSlide>
             ))
@@ -130,7 +139,7 @@ const TopPicks = () => {
                 className={cn(slideClassName, "cursor-pointer!")}
               >
                 <motion.div
-                  className="group relative size-full overflow-hidden"
+                  className="group relative size-full overflow-hidden rounded-[1.35rem] ring-1 ring-black/6"
                   initial="rest"
                   whileHover="hover"
                   role="link"
@@ -143,37 +152,53 @@ const TopPicks = () => {
                     }
                   }}
                 >
-                  <RenderImage url={pick.photo} className="size-full origin-center object-cover will-change-transform hover:scale-105 transition-transform duration-300 ease-out" />
+                  <RenderImage
+                    url={pick.photo}
+                    className="size-full origin-center object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
                   <div
                     className={cn(
-                      "pointer-events-none absolute inset-0 z-10 flex flex-col items-start justify-between",
-                      "bg-linear-to-b from-black/20 to-black/60 p-2 text-sm font-semibold text-white",
-                      "opacity-80 transition-opacity duration-500 ease-out group-hover:opacity-100",
+                      "pointer-events-none absolute inset-0 z-10 flex flex-col items-start justify-between p-3 text-white",
                     )}
                   >
-                    <div className="flex w-full items-center justify-end gap-1 pointer-events-auto">
-                      <CompareAddButton
-                        listing={pickToListing(pick)}
-                        className="bg-black/20!"
-                      />
-                      <WishlistButton
-                        listingId={pick.id}
-                        listingName={pick.name}
-                        className="bg-black/20!"
-                      />
+                    <div className="flex w-full items-center justify-between gap-1 pointer-events-auto">
+                      {pick.badge ? (
+                        <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide backdrop-blur-sm">
+                          {pick.badge}
+                        </span>
+                      ) : (
+                        <span />
+                      )}
+                      <div className="flex items-center gap-1">
+                        <CompareAddButton
+                          listing={pickToListing(pick)}
+                          className="bg-black/25!"
+                        />
+                        <WishlistButton
+                          listingId={pick.id}
+                          listingName={pick.name}
+                          className="bg-black/25!"
+                        />
+                      </div>
                     </div>
-                    <div className="flex flex-col items-start justify-start gap-1">
+                    <div className="flex w-full flex-col items-start gap-0.5">
                       <CustomTooltip title={pick.name}>
-                        <span className="pointer-events-auto line-clamp-1">
+                        <span className="pointer-events-auto line-clamp-1 text-sm font-semibold">
                           {pick.name}
                         </span>
                       </CustomTooltip>
-                      <span className="text-xs text-white/80">
-                        {pick.city.name}
-                      </span>
-                      <span className="text-xs text-white/80">
-                        {pick?.rating?.toFixed(1)} • {pick?.reviewCount} Reviews
-                      </span>
+                      <span className="text-[11px] text-white/75">{pick.city.name}</span>
+                      <div className="mt-1 flex items-center gap-2 text-[11px] text-white/80">
+                        <span className="font-semibold tabular-nums">
+                          €{pick.pricePerNight}
+                          <span className="font-normal text-white/60">/night</span>
+                        </span>
+                        <span className="text-white/35">·</span>
+                        <span className="tabular-nums">
+                          {pick.rating.toFixed(1)} ({pick.reviewCount})
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </motion.div>

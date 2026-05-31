@@ -25,9 +25,14 @@ const spring = { type: "spring", stiffness: 380, damping: 28 } as const;
 type AskAiBookingBarProps = {
   className?: string;
   compact?: boolean;
+  embedded?: boolean;
 };
 
-const AskAiBookingBar = ({ className, compact = false }: AskAiBookingBarProps) => {
+const AskAiBookingBar = ({
+  className,
+  compact = false,
+  embedded = false,
+}: AskAiBookingBarProps) => {
   const IconSend = useIcon("send");
   const IconStars = useIcon("stars");
   const reduceMotion = useReducedMotion();
@@ -100,68 +105,82 @@ const AskAiBookingBar = ({ className, compact = false }: AskAiBookingBarProps) =
 
   return (
     <motion.div
-      className={cn("relative w-full max-w-[64%] pt-2", className)}
-      {...entrance}
+      className={cn(
+        "relative w-full",
+        embedded ? "max-w-full" : "max-w-[64%] pt-2",
+        className,
+      )}
+      {...(embedded || reduceMotion ? {} : entrance)}
     >
-      <motion.span
-        initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.35, duration: 0.35, ease: "easeOut" }}
-        className="absolute -top-0.5 left-5 z-10 inline-flex items-center gap-1 rounded-full border border-main/25 bg-background-paper px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-main shadow-sm"
-      >
-        <IconStars className="size-3 shrink-0" aria-hidden />
-        AI Concierge
-      </motion.span>
+      {!embedded ? (
+        <motion.span
+          initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.35, duration: 0.35, ease: "easeOut" }}
+          className="absolute -top-0.5 left-5 z-10 inline-flex items-center gap-1 rounded-full border border-main/25 bg-background-paper px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-main shadow-sm"
+        >
+          <IconStars className="size-3 shrink-0" aria-hidden />
+          AI Concierge
+        </motion.span>
+      ) : null}
 
       <div
-        className="group/ai relative overflow-hidden rounded-2xl p-[2px]"
+        className={cn(
+          "group/ai relative overflow-hidden",
+          embedded ? "rounded-2xl" : "rounded-2xl p-[2px]",
+        )}
         aria-label="Ask AI concierge"
       >
-        <motion.div
-          aria-hidden
-          className="pointer-events-none absolute -inset-3 rounded-3xl"
-          style={{
-            background:
-              "radial-gradient(ellipse at center, color-mix(in srgb, var(--color-main) 28%, transparent), transparent 70%)",
-            filter: "blur(12px)",
-          }}
-          animate={
-            reduceMotion
-              ? undefined
-              : { opacity: [0.45, 0.75, 0.45] }
-          }
-          transition={
-            reduceMotion
-              ? undefined
-              : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
-          }
-        />
+        {!embedded ? (
+          <>
+            <motion.div
+              aria-hidden
+              className="pointer-events-none absolute -inset-3 rounded-3xl"
+              style={{
+                background:
+                  "radial-gradient(ellipse at center, color-mix(in srgb, var(--color-main) 28%, transparent), transparent 70%)",
+                filter: "blur(12px)",
+              }}
+              animate={
+                reduceMotion
+                  ? undefined
+                  : { opacity: [0.45, 0.75, 0.45] }
+              }
+              transition={
+                reduceMotion
+                  ? undefined
+                  : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
+              }
+            />
 
-        <motion.div
-          aria-hidden
-          className="pointer-events-none absolute inset-[-120%] opacity-50"
-          style={{
-            background:
-              "conic-gradient(from 0deg, transparent 0%, color-mix(in srgb, var(--color-main) 70%, transparent) 18%, transparent 36%, color-mix(in srgb, var(--color-main) 55%, transparent) 54%, transparent 72%, color-mix(in srgb, var(--color-main) 70%, transparent) 90%, transparent 100%)",
-          }}
-          animate={reduceMotion ? undefined : { rotate: 360 }}
-          transition={
-            reduceMotion
-              ? undefined
-              : { duration: 7, repeat: Infinity, ease: "linear" }
-          }
-        />
+            <motion.div
+              aria-hidden
+              className="pointer-events-none absolute inset-[-120%] opacity-50"
+              style={{
+                background:
+                  "conic-gradient(from 0deg, transparent 0%, color-mix(in srgb, var(--color-main) 70%, transparent) 18%, transparent 36%, color-mix(in srgb, var(--color-main) 55%, transparent) 54%, transparent 72%, color-mix(in srgb, var(--color-main) 70%, transparent) 90%, transparent 100%)",
+              }}
+              animate={reduceMotion ? undefined : { rotate: 360 }}
+              transition={
+                reduceMotion
+                  ? undefined
+                  : { duration: 7, repeat: Infinity, ease: "linear" }
+              }
+            />
+          </>
+        ) : null}
 
         <motion.div
           aria-hidden
           className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-focus-within/ai:opacity-100"
           style={{
-            boxShadow:
-              "0 0 0 1px color-mix(in srgb, var(--color-main) 35%, transparent), 0 12px 40px -10px color-mix(in srgb, var(--color-main) 35%, transparent)",
+            boxShadow: embedded
+              ? "0 0 0 1px color-mix(in srgb, var(--color-main) 20%, transparent)"
+              : "0 0 0 1px color-mix(in srgb, var(--color-main) 35%, transparent), 0 12px 40px -10px color-mix(in srgb, var(--color-main) 35%, transparent)",
           }}
         />
 
-        {!reduceMotion ? (
+        {!reduceMotion && !embedded ? (
           <motion.div
             aria-hidden
             className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl"
@@ -181,9 +200,10 @@ const AskAiBookingBar = ({ className, compact = false }: AskAiBookingBarProps) =
 
         <div
           className={cn(
-            "relative flex h-14 items-center gap-2.5 rounded-[calc(1rem-2px)] border border-main/10 bg-background-paper/95 px-3 py-1 shadow-lg backdrop-blur-sm",
-            "shadow-[0_0_24px_-4px_color-mix(in_srgb,var(--color-main)_25%,transparent)]",
-            "transition-shadow duration-300 group-focus-within/ai:shadow-[0_0_32px_0_color-mix(in_srgb,var(--color-main)_35%,transparent),0_16px_48px_-16px_color-mix(in_srgb,var(--color-main)_30%,transparent)]",
+            "relative flex h-14 items-center gap-2.5 rounded-2xl border px-3 py-1 backdrop-blur-sm",
+            embedded
+              ? "border-black/6 bg-black/2"
+              : "rounded-[calc(1rem-2px)] border-main/10 bg-background-paper/95 shadow-lg shadow-[0_0_24px_-4px_color-mix(in_srgb,var(--color-main)_25%,transparent)] transition-shadow duration-300 group-focus-within/ai:shadow-[0_0_32px_0_color-mix(in_srgb,var(--color-main)_35%,transparent),0_16px_48px_-16px_color-mix(in_srgb,var(--color-main)_30%,transparent)]",
           )}
         >
           <motion.div

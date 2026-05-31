@@ -37,69 +37,73 @@ const BookingSearchForm = () => {
   };
 
   return (
-    <div className="flex min-h-14 max-w-[1/2] items-stretch gap-2 rounded-2xl border-2 border-main/10 bg-background-paper p-2 shadow-lg">
-      <RenderInput
-        className="min-w-0 flex-1"
-        label="WHERE"
-        icon="location"
-        render="search"
-        value={searchInputs.city}
-        onValueChange={(city) => setSearchInput({ city })}
-        onSubmit={submitSearch}
-      />
-      <RenderInput
-        className="min-w-0 flex-1"
-        label="CHECK IN"
-        icon="calendar"
-        render="date"
-        dateValue={checkIn}
-        onDateChange={handleCheckInChange}
-        dateOpen={openDate === "checkIn"}
-        onDateOpen={() => setOpenDate("checkIn")}
-        onDateClose={() => setOpenDate(null)}
-        minDate={minCheckIn}
-      />
-      <RenderInput
-        className="min-w-0 flex-1"
-        label="CHECK OUT"
-        icon="calendar"
-        render="date"
-        dateValue={checkOut}
-        onDateChange={(value) =>
-          value && setSearchInput({ checkOut: value.format("YYYY-MM-DD") })
-        }
-        dateOpen={openDate === "checkOut"}
-        onDateOpen={() => setOpenDate("checkOut")}
-        onDateClose={() => setOpenDate(null)}
-        minDate={checkIn.add(1, "day")}
-      />
-      <RenderInput
-        className="min-w-0 flex-1"
-        label="GUESTS"
-        icon="users"
-        render="guests"
-        guestAdults={searchInputs.adults}
-        guestChildren={searchInputs.children ?? 0}
-        guestRooms={searchInputs.rooms ?? 1}
-        onGuestBreakdownChange={({ adults, children, rooms }) =>
-          setSearchInput({ adults, children, rooms })
-        }
-      />
-      <Button
-        type="button"
-        variant="text"
-        color="primary"
-        disabled={!canSearch}
-        onClick={submitSearch}
-        startIcon={<IconSearch size={24} />}
-        loading={isSearching}
-        className={cn(
-          "h-full! w-40! rounded-xl! bg-main/50! font-bold! text-black/70!",
-          !canSearch && "cursor-not-allowed! opacity-50!",
-        )}
-      >
-        Search
-      </Button>
+    <div className="overflow-x-auto no-scrollbar">
+      <div className="flex h-14 min-w-[720px] items-stretch gap-1 rounded-2xl border border-black/6 bg-black/2 p-1 sm:min-w-0 sm:w-full">
+        <RenderInput
+          className="min-h-0! min-w-0 flex-1 rounded-xl! border-0! bg-background-paper! shadow-none! hover:bg-background-paper!"
+          label="Where"
+          icon="location"
+          render="search"
+          value={searchInputs.city}
+          onValueChange={(city) => setSearchInput({ city })}
+          onSubmit={submitSearch}
+        />
+        <RenderInput
+          className="min-h-0! min-w-0 flex-1 rounded-xl! border-0! bg-background-paper! shadow-none! hover:bg-background-paper!"
+          label="Check in"
+          icon="calendar"
+          render="date"
+          dateValue={checkIn}
+          onDateChange={handleCheckInChange}
+          dateOpen={openDate === "checkIn"}
+          onDateOpen={() => setOpenDate("checkIn")}
+          onDateClose={() => setOpenDate(null)}
+          minDate={minCheckIn}
+        />
+        <RenderInput
+          className="min-h-0! min-w-0 flex-1 rounded-xl! border-0! bg-background-paper! shadow-none! hover:bg-background-paper!"
+          label="Check out"
+          icon="calendar"
+          render="date"
+          dateValue={checkOut}
+          onDateChange={(value) =>
+            value && setSearchInput({ checkOut: value.format("YYYY-MM-DD") })
+          }
+          dateOpen={openDate === "checkOut"}
+          onDateOpen={() => setOpenDate("checkOut")}
+          onDateClose={() => setOpenDate(null)}
+          minDate={checkIn.add(1, "day")}
+        />
+        <RenderInput
+          className="min-h-0! min-w-0 flex-1 rounded-xl! border-0! bg-background-paper! shadow-none! hover:bg-background-paper!"
+          label="Guests"
+          icon="users"
+          render="guests"
+          guestAdults={searchInputs.adults}
+          guestChildren={searchInputs.children ?? 0}
+          guestRooms={searchInputs.rooms ?? 1}
+          onGuestBreakdownChange={({ adults, children, rooms }) =>
+            setSearchInput({ adults, children, rooms })
+          }
+        />
+        <Button
+          type="button"
+          variant="text"
+          color="primary"
+          disabled={!canSearch}
+          onClick={submitSearch}
+          startIcon={<IconSearch size={20} />}
+          loading={isSearching}
+          className={cn(
+            "h-auto! min-w-[7.5rem]! shrink-0 rounded-xl! px-4! font-semibold! normal-case! shadow-sm!",
+            canSearch
+              ? "bg-main! text-white! hover:bg-main/90!"
+              : "cursor-not-allowed! bg-black/5! text-black/35!",
+          )}
+        >
+          Search
+        </Button>
+      </div>
     </div>
   );
 };

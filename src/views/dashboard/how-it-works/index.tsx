@@ -13,13 +13,13 @@ type StepCardProps = {
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 14 },
   visible: (index: number) => ({
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.45,
-      delay: index * 0.08,
+      duration: 0.4,
+      delay: index * 0.07,
       ease: [0.22, 1, 0.36, 1] as const,
     },
   }),
@@ -43,22 +43,29 @@ const StepCard = ({
       viewport={{ once: true, margin: "-40px" }}
       variants={cardVariants}
       className={cn(
-        "group relative flex flex-col gap-4 rounded-2xl border border-main/15 bg-background-paper p-5",
-        "shadow-sm transition-[border-color,box-shadow,transform] duration-500 ease-out",
+        "group relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-black/6",
+        "bg-background-paper/80 p-4 backdrop-blur-sm",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-main/10 text-main transition-colors duration-300 group-hover:bg-main/15">
-          <Icon className="size-5" aria-hidden />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -top-3 -right-1 text-6xl font-bold leading-none text-main/6"
+      >
+        {step}
+      </span>
+
+      <div className="relative flex items-center gap-3">
+        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-main/10 text-main">
+          <Icon className="size-4" aria-hidden />
         </span>
-        <span className="rounded-full border border-main/20 bg-main/5 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-main/80">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-black/40">
           Step {step}
         </span>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <h3 className="text-base font-semibold text-black/85">{title}</h3>
-        <p className="text-sm leading-relaxed text-black/55">{description}</p>
+      <div className="relative flex flex-col gap-1">
+        <h3 className="text-sm font-semibold text-black/85">{title}</h3>
+        <p className="text-[13px] leading-relaxed text-black/50">{description}</p>
       </div>
     </motion.li>
   );
@@ -89,30 +96,25 @@ const STEPS = [
 ];
 
 const HowItWorks = () => {
-  const RouteIcon = useIcon("location");
   const reduceMotion = useReducedMotion();
 
   return (
-    <section className="w-full pt-2">
-      <div className="mb-6 flex flex-col items-center gap-2 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-main/20 bg-main/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-main">
-          <RouteIcon className="size-3.5 shrink-0" aria-hidden />
-          How it works
+    <section className="w-full border-t border-black/5 pt-10">
+      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-main/75">
+            How it works
+          </p>
+          <h2 className="max-w-md text-xl font-bold tracking-tight text-black/85 sm:text-2xl">
+            A travel concierge that actually plans
+          </h2>
         </div>
-        <h2 className="max-w-xl text-2xl font-bold leading-tight text-black/85 sm:text-3xl">
-          A travel concierge that actually plans
-        </h2>
-        <p className="max-w-lg text-sm font-light leading-relaxed text-black/55 sm:text-base">
+        <p className="max-w-sm text-[13px] leading-relaxed text-black/45">
           Three steps from idea to itinerary — no endless tabs, no spreadsheet.
         </p>
       </div>
 
-      <ol className="relative grid gap-4 md:grid-cols-3 md:gap-5">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-[calc(16.67%-8px)] right-[calc(16.67%-8px)] top-10 hidden h-px bg-linear-to-r from-transparent via-main/25 to-transparent md:block"
-        />
-
+      <ol className="grid gap-3 md:grid-cols-3 md:gap-4">
         {STEPS.map((step, index) => (
           <StepCard
             key={step.step}

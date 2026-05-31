@@ -10,14 +10,19 @@ import cn from "@/utils/cn";
 
 type RenderType = "search" | "date" | "guests";
 
+const VALUE_ROW_HEIGHT = 20;
+
 const fieldSx = {
   m: 0,
-  height: "100%",
+  height: VALUE_ROW_HEIGHT,
   width: "100%",
-  "& .MuiFormControl-root": { height: "100%" },
+  "& .MuiFormControl-root": {
+    height: VALUE_ROW_HEIGHT,
+    margin: 0,
+  },
   "& .MuiInputBase-root, & .MuiPickersInputBase-root": {
-    height: "100%",
-    minHeight: 0,
+    height: VALUE_ROW_HEIGHT,
+    minHeight: `${VALUE_ROW_HEIGHT}px !important`,
     py: 0,
     alignItems: "center",
     border: "none !important",
@@ -26,12 +31,20 @@ const fieldSx = {
   },
   "& fieldset, & .MuiOutlinedInput-notchedOutline, & .MuiPickersOutlinedInput-notchedOutline":
     { border: "none !important" },
+  "& .MuiPickersSectionList-root": {
+    padding: 0,
+    minHeight: VALUE_ROW_HEIGHT,
+  },
+  "& .MuiPickersSectionList-section, & .MuiPickersInputBase-sectionContent": {
+    lineHeight: `${VALUE_ROW_HEIGHT}px`,
+  },
   "& .MuiInputBase-input": {
     py: 0,
     px: 0,
-    height: "100%",
+    height: VALUE_ROW_HEIGHT,
+    minHeight: VALUE_ROW_HEIGHT,
     fontSize: "0.875rem",
-    lineHeight: 1.25,
+    lineHeight: `${VALUE_ROW_HEIGHT}px`,
     cursor: "pointer",
   },
 };
@@ -40,14 +53,18 @@ const flatTextFieldProps = {
   variant: "standard" as const,
   margin: "none" as const,
   fullWidth: true,
-  className: "h-full w-full",
+  className: "h-5 w-full",
   sx: fieldSx,
   slotProps: {
     input: { disableUnderline: true },
   },
 };
 
-const fieldWrap = "flex min-h-0 flex-1 w-full items-center";
+const valueRowClass = (render: RenderType, hasGuestBreakdown: boolean) =>
+  cn(
+    "flex w-full shrink-0 items-center",
+    render === "guests" && !hasGuestBreakdown ? "h-7" : "h-5",
+  );
 
 type RenderInputProps = {
   label?: string;
@@ -154,19 +171,24 @@ const RenderInput = ({
           : undefined
       }
       className={cn(
-        "flex h-full min-h-14 w-full cursor-pointer select-none flex-col items-start rounded-xl bg-background-paper px-4 py-2 hover:bg-main/10",
+        "flex h-full min-h-0 w-full cursor-pointer select-none flex-col justify-center gap-1 rounded-xl bg-background-paper px-4 py-2 hover:bg-main/10",
         !showLabel && "justify-center px-0 py-0",
         className,
       )}
     >
       {showLabel && icon && (
-        <p className="flex shrink-0 items-center gap-0.5 text-xs font-semibold opacity-70">
-          <Icon className="text-lg" />
+        <p className="flex h-4 shrink-0 items-center gap-0.5 text-xs font-semibold leading-none opacity-70">
+          <Icon className="text-base" aria-hidden />
           <span>{label}</span>
         </p>
       )}
 
-      <div className={cn(fieldWrap, !showLabel && "flex-1")}>
+      <div
+        className={cn(
+          valueRowClass(render, Boolean(onGuestBreakdownChange)),
+          !showLabel && "flex-1",
+        )}
+      >
         {render === "search" && (
           <TextField
             {...flatTextFieldProps}
@@ -186,7 +208,7 @@ const RenderInput = ({
 
         {render === "date" && (
           <DesktopDatePicker
-            className="h-full w-full"
+            className="h-5 w-full"
             sx={{ ...fieldSx, display: "flex", alignItems: "center" }}
             value={dateValue ?? null}
             onChange={(value, ctx) => {
@@ -209,7 +231,7 @@ const RenderInput = ({
           <>
             <button
               type="button"
-              className="flex h-full w-full items-center text-left text-sm font-medium text-black/75"
+              className="flex h-5 w-full items-center text-left text-sm font-medium leading-5 text-black/75"
               onClick={(e) => {
                 e.stopPropagation();
                 setGuestAnchor(e.currentTarget);
