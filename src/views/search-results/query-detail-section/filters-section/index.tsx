@@ -141,7 +141,7 @@ const panelMotion = {
 export const FiltersSkeleton = () => (
   <motion.div
     {...panelMotion}
-    className="rounded-xl border border-black/8 bg-background-paper px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+    className="rounded-xl border border-black/6 bg-background-paper/90 px-3 py-2"
     aria-busy="true"
     aria-label="Loading filters"
   >
@@ -175,7 +175,7 @@ export const FiltersSkeleton = () => (
 
 const FiltersSection = () => {
   const ChevronIcon = useIcon("chevronRight");
-  const { searchInputs, searchData, setSearchInput, refreshSearch, isSearching } =
+  const { searchInputs, searchData, fetchSearch, isSearching, inputsRevision } =
     useSearch();
   const [filters, setFilters] = useState<FiltersState>(() =>
     filtersFromInputs(searchInputs),
@@ -194,20 +194,20 @@ const FiltersSection = () => {
   const sort = searchInputs.sort ?? DEFAULT_SEARCH_SORT;
   const showSkeleton = isSearching && !searchData;
 
-  useEffect(() => {
-    setFilters(filtersFromInputs(searchInputs));
-  }, [searchInputs.priceRange, searchInputs.chips]);
-
   const commitFilters = useCallback(
     (next: FiltersState) => {
-      const patch = patchFromFilters(next);
-      setSearchInput(patch);
-      refreshSearch(patch);
+      fetchSearch(patchFromFilters(next));
     },
-    [refreshSearch, setSearchInput],
+    [fetchSearch],
   );
 
-  const debouncedCommit = useDebouncedCallback(commitFilters, FILTER_DEBOUNCE_MS);
+  const { debounced: debouncedCommit, cancel: cancelDebouncedCommit } =
+    useDebouncedCallback(commitFilters, FILTER_DEBOUNCE_MS);
+
+  useEffect(() => {
+    cancelDebouncedCommit();
+    setFilters(filtersFromInputs(searchInputs));
+  }, [inputsRevision, cancelDebouncedCommit, searchInputs]);
 
   const updateFilters = useCallback(
     (updater: (prev: FiltersState) => FiltersState) => {
@@ -243,17 +243,14 @@ const FiltersSection = () => {
       chips: defaultChips(),
     };
     setFilters(next);
-    setSearchInput({ priceRange: undefined, chips: defaultChips() });
-    refreshSearch({ priceRange: undefined, chips: defaultChips() });
-  }, [refreshSearch, setSearchInput]);
+    fetchSearch({ priceRange: undefined, chips: defaultChips() });
+  }, [fetchSearch]);
 
   const handleSortChange = useCallback(
     (nextSort: string) => {
-      const sortValue = nextSort as SearchSort;
-      setSearchInput({ sort: sortValue });
-      refreshSearch({ sort: sortValue });
+      fetchSearch({ sort: nextSort as SearchSort });
     },
-    [refreshSearch, setSearchInput],
+    [fetchSearch],
   );
 
   const activeCount = useMemo(() => {
@@ -279,7 +276,7 @@ const FiltersSection = () => {
   const priceOpen = Boolean(priceAnchor);
 
   return (
-    <div className="w-full border-t border-dashed border-black/15 pt-4">
+    <div className="w-full">
       <AnimatePresence mode="wait" initial={false}>
         {showSkeleton ? (
           <FiltersSkeleton key="filters-skeleton" />
@@ -287,33 +284,25 @@ const FiltersSection = () => {
           <motion.div
             key="filters-content"
             {...panelMotion}
-            className="rounded-xl border border-black/8 bg-background-paper px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+            className="rounded-xl border border-black/6 bg-background-paper/90 px-3 py-2"
           >
-            <div className="mb-3 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-black/80">Filters</span>
-                {activeCount > 0 ? (
-                  <span className="text-xs font-medium text-black/45">
-                    {activeCount} active
-                  </span>
-                ) : null}
-              </div>
+            <div className="mb-2 flex items-center justify-end">
               <button
                 type="button"
                 onClick={handleClear}
                 disabled={activeCount === 0}
-                className="cursor-pointer select-none text-sm font-semibold text-main hover:underline disabled:cursor-default disabled:text-black/30 disabled:no-underline"
+                className="cursor-pointer select-none text-xs font-semibold text-main hover:underline disabled:cursor-default disabled:text-black/30 disabled:no-underline"
               >
                 Clear all
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <Button
                 variant="outlined"
                 onClick={(event) => setPriceAnchor(event.currentTarget)}
                 className={cn(
-                  "h-10! shrink-0 rounded-full! border-black/8! bg-background-paper! px-4! text-sm! font-semibold! normal-case! text-black/80! shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]!",
+                  "h-8! shrink-0 rounded-full! border-black/8! bg-background-paper! px-3! text-xs! font-semibold! normal-case! text-black/80!",
                   isPriceActive(filters.priceRange) &&
                     "border-main/45! bg-main/5! text-black/90!",
                   priceOpen && "border-main! ring-2! ring-main/15!",

@@ -12,7 +12,7 @@ import { BiSolidCommentDetail } from "react-icons/bi";
 import { IoIosSend } from "react-icons/io";
 import { CiGrid41 } from "react-icons/ci";
 import { CiMap } from "react-icons/ci";
-import { LuArrowUpDown } from "react-icons/lu";
+import { LuArrowUpDown, LuSlidersHorizontal } from "react-icons/lu";
 import { GoChevronLeft } from "react-icons/go";
 import { GoChevronRight } from "react-icons/go";
 import { VscHeart } from "react-icons/vsc";
@@ -32,6 +32,7 @@ export const ICON_REGISTRY = {
   grid: CiGrid41,
   map: CiMap,
   arrowUpDown: LuArrowUpDown,
+  filter: LuSlidersHorizontal,
   chevronLeft: GoChevronLeft,
   chevronRight: GoChevronRight,
   heart: VscHeart,

@@ -66,6 +66,18 @@ export type AssistantMessageData = {
   id?: string;
 };
 
+export type AssistantSelectedFacets = {
+  priceRange?: { min: number | null; max: number | null };
+  propertyTypes?: Record<string, boolean>;
+  amenities?: Record<string, boolean>;
+  ratingMin?: number | null;
+  city?: string | null;
+  dates?: { checkIn?: string; checkOut?: string } | null;
+  guests?: { adults?: number; children?: number; rooms?: number } | null;
+  vibe?: string | null;
+  areaPreference?: string | null;
+};
+
 export type AssistantResultsData = {
   message?: string;
   items: SearchListingItem[];
@@ -84,6 +96,7 @@ export type AssistantResultsData = {
   };
   meta?: { facets?: SearchData["facets"]; [key: string]: unknown };
   facets?: SearchData["facets"];
+  selectedFacets?: AssistantSelectedFacets;
 };
 
 export type ChatMessageRole = "user" | "assistant";
@@ -158,6 +171,7 @@ export type StateUpdatedData = {
   parsedFilters?: unknown;
   chips?: AssistantChip[];
   inputs?: AssistantResultsData["inputs"];
+  selectedFacets?: AssistantSelectedFacets;
   phase?: ConversationPhase;
   missingMandatory?: string[];
   missingFields?: string[];

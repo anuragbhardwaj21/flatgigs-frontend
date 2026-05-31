@@ -22,7 +22,12 @@ const entrance = {
 
 const spring = { type: "spring", stiffness: 380, damping: 28 } as const;
 
-const AskAiBookingBar = ({ className }: { className?: string }) => {
+type AskAiBookingBarProps = {
+  className?: string;
+  compact?: boolean;
+};
+
+const AskAiBookingBar = ({ className, compact = false }: AskAiBookingBarProps) => {
   const IconSend = useIcon("send");
   const IconStars = useIcon("stars");
   const reduceMotion = useReducedMotion();
@@ -48,6 +53,50 @@ const AskAiBookingBar = ({ className }: { className?: string }) => {
     sendMessage(trimmed);
     setQuery("");
   }, [query, sendMessage, isWsReady, isBusy]);
+
+  if (compact) {
+    return (
+      <div className={cn("relative w-full", className)} aria-label="Ask AI concierge">
+        <div className="flex h-8 items-center gap-2 rounded-lg border border-black/6 bg-background-paper px-2">
+          <IconStars className="size-3.5 shrink-0 text-main/80" aria-hidden />
+          <div className="relative min-w-0 flex-1">
+            <RenderInput
+              render="search"
+              className="min-h-0! h-7! min-w-0 rounded-none bg-transparent px-0 py-0 hover:bg-transparent [&_.MuiInputBase-input]:text-xs [&_.MuiInputBase-input]:font-medium [&_.MuiInputBase-input]:text-black/75"
+              placeholder=""
+              value={query}
+              onValueChange={setQuery}
+              onSubmit={handleSubmit}
+            />
+            {!query ? (
+              <span className="pointer-events-none absolute inset-x-0 top-1/2 line-clamp-1 -translate-y-1/2 text-xs text-black/35">
+                {PLACEHOLDER_HINTS[hintIndex]}
+              </span>
+            ) : null}
+          </div>
+          <Button
+            type="button"
+            variant="text"
+            color="primary"
+            disabled={!canSubmit}
+            onClick={handleSubmit}
+            aria-label="Send to AI concierge"
+            className={cn(
+              "h-6! min-w-6! shrink-0 rounded-md! p-0!",
+              canSubmit ? "bg-main! text-white!" : "text-black/30!",
+            )}
+          >
+            <IconSend size={14} />
+          </Button>
+        </div>
+        {lastError ? (
+          <p className="mt-1 text-xs text-red-600" role="alert">
+            {lastError}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <motion.div

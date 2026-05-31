@@ -35,7 +35,7 @@ const MapView = ({ className }: MapViewProps) => {
   const lastFittedCityRef = useRef<string | null>(null);
   const clusterZoomRef = useRef(12);
 
-  const { searchData, searchInputs, refreshMapBounds, refreshSearch, setSearchInput } =
+  const { searchData, searchInputs, refreshMapBounds, fetchSearch } =
     useSearch();
   const {
     hoveredListingId,
@@ -140,10 +140,8 @@ const MapView = ({ className }: MapViewProps) => {
 
   const restoreCityResults = useCallback(() => {
     if (!searchInputs.bounds) return;
-    const patch = { bounds: undefined, page: 1 };
-    setSearchInput(patch);
-    refreshSearch(patch);
-  }, [refreshSearch, searchInputs.bounds, setSearchInput]);
+    fetchSearch({ bounds: undefined, page: 1 });
+  }, [fetchSearch, searchInputs.bounds]);
 
   const handleToggleMapExpanded = useCallback(() => {
     const next = !mapExpanded;

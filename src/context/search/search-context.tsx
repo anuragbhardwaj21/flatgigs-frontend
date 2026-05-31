@@ -1,4 +1,5 @@
 
+import { buildAssistantSearchPayload } from "@/context/chat/apply-assistant-search";
 import { buildSearchQuery } from "@/context/search/build-search-query";
 import { DEFAULT_VIEW_TYPE, SEARCH_PAGE_LIMIT } from "@/context/search/constants";
 import { isAbortedSearchError } from "@/context/search/is-aborted-search";
@@ -12,10 +13,9 @@ import {
   persistSearchInputs,
 } from "@/context/search/persist";
 import { searchValidationSchema } from "@/context/search/validation";
-import type { AssistantResultsData } from "@/store/types/chat";
 import { useLazySearchQuery } from "@/store/services/search-api";
+import type { AssistantChip, AssistantResultsData, AssistantSelectedFacets } from "@/store/types/chat";
 import type { SearchData } from "@/store/types/search";
-import { buildAssistantSearchPayload } from "@/context/chat/apply-assistant-search";
 import { FormikProvider, useFormik, type FormikProps } from "formik";
 import {
   createContext,
@@ -31,7 +31,22 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 const RESULTS_PATH = "/results";
 
-export type SearchSource = "form" | "chat";
+export type SearchSource = "chat" | "api";
+
+export type HydratePayload = {
+  data?: SearchData | null;
+  inputs?: AssistantResultsData["inputs"];
+  chips?: AssistantChip[];
+  selectedFacets?: AssistantSelectedFacets;
+  source: "chat";
+};
+
+export type FetchOptions = {
+  navigate?: boolean;
+  append?: boolean;
+  page?: number;
+  preferCache?: boolean;
+};
 
 type SearchContextValue = {
   searchInputs: SearchInputs;
@@ -40,16 +55,14 @@ type SearchContextValue = {
   setSearchInput: (patch: SearchInputPatch) => void;
   setViewType: (viewType: SearchViewType) => void;
   submitSearch: () => void;
-  refreshSearch: (patch?: SearchInputPatch) => void;
+  fetchSearch: (patch?: SearchInputPatch, options?: FetchOptions) => void;
+  hydrateSearch: (payload: HydratePayload) => void;
   loadMoreResults: () => void;
   refreshMapBounds: (bounds: string) => void;
   searchData: SearchData | null;
   searchSource: SearchSource;
-  applyChatSearchFromAssistant: (data: AssistantResultsData) => void;
-  applyChatFiltersFromState: (data: {
-    chips?: AssistantResultsData["chips"];
-    inputs?: AssistantResultsData["inputs"];
-  }) => void;
+  assistantChips: AssistantChip[];
+  inputsRevision: number;
   hasMoreResults: boolean;
   isLoadingMore: boolean;
   isSearching: boolean;
@@ -77,7 +90,9 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
   const { pathname } = useLocation();
   const [triggerSearch, { isFetching }] = useLazySearchQuery();
   const [searchData, setSearchData] = useState<SearchData | null>(null);
-  const [searchSource, setSearchSource] = useState<SearchSource>("form");
+  const [searchSource, setSearchSource] = useState<SearchSource>("api");
+  const [assistantChips, setAssistantChips] = useState<AssistantChip[]>([]);
+  const [inputsRevision, setInputsRevision] = useState(0);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const hasRestoredResultsRef = useRef(false);
@@ -89,15 +104,14 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
     activeSearchRef.current = null;
   }, []);
 
+  const bumpInputsRevision = useCallback(() => {
+    setInputsRevision((revision) => revision + 1);
+  }, []);
+
   const runSearch = useCallback(
     async (
       values: SearchInputs,
-      options?: {
-        navigate?: boolean;
-        append?: boolean;
-        page?: number;
-        preferCache?: boolean;
-      },
+      options?: FetchOptions,
     ) => {
       const page = options?.page ?? values.page ?? 1;
       const queryValues = {
@@ -111,6 +125,7 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
       cancelActiveSearch();
       const generation = ++searchGenerationRef.current;
       setSearchError(null);
+      setAssistantChips([]);
 
       const request = triggerSearch(query, options?.preferCache ?? true);
       activeSearchRef.current = request;
@@ -119,7 +134,7 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
         const result = await request.unwrap();
         if (generation !== searchGenerationRef.current) return false;
 
-        setSearchSource("form");
+        setSearchSource("api");
         setSearchData((prev) =>
           options?.append ? mergeSearchPages(prev, result, page) : result,
         );
@@ -177,54 +192,65 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
       setSearchError(null);
       try {
         const result = await triggerSearch(query, true).unwrap();
-        setSearchSource("form");
+        setSearchSource("api");
         setSearchData(result);
       } catch {
         setSearchError("Search failed. Please try again.");
         hasRestoredResultsRef.current = false;
       }
     })();
-  }, [pathname, searchData, searchSource, formik.values, triggerSearch]);
+  }, [pathname, searchData, searchSource, triggerSearch]);
 
   const applyInputPatch = useCallback(
     (patch: Partial<SearchInputs>) => {
-      for (const [key, value] of Object.entries(patch) as [
-        keyof SearchInputs,
-        SearchInputs[keyof SearchInputs],
-      ][]) {
-        void formik.setFieldValue(key, value);
-      }
-      persistSearchInputs({ ...formik.values, ...patch });
+      const next = { ...formik.values, ...patch };
+      void formik.setValues(next);
+      persistSearchInputs(next);
+      bumpInputsRevision();
     },
-    [formik],
+    [formik, bumpInputsRevision],
   );
 
-  const applyChatSearchFromAssistant = useCallback(
-    (data: AssistantResultsData) => {
-      const { searchData: nextData, inputPatch } = buildAssistantSearchPayload(data);
+  const hydrateSearch = useCallback(
+    (payload: HydratePayload) => {
+      const { searchData: nextData, inputPatch, displayChips } =
+        buildAssistantSearchPayload({
+          items: payload.data?.items ?? [],
+          total: payload.data?.total ?? 0,
+          mapPins: payload.data?.mapPins,
+          facets: payload.data?.facets,
+          chips: payload.chips,
+          inputs: payload.inputs,
+          selectedFacets: payload.selectedFacets,
+        });
+
       setSearchError(null);
-      setSearchSource("chat");
-      setSearchData(nextData);
-      hasRestoredResultsRef.current = true;
+      setAssistantChips(displayChips);
+
+      if (payload.data) {
+        setSearchSource("chat");
+        setSearchData(payload.data);
+        hasRestoredResultsRef.current = true;
+      } else if (nextData && nextData.items.length > 0) {
+        setSearchSource("chat");
+        setSearchData(nextData);
+        hasRestoredResultsRef.current = true;
+      }
+
       applyInputPatch(inputPatch);
     },
     [applyInputPatch],
   );
 
-  const applyChatFiltersFromState = useCallback(
-    (data: {
-      chips?: AssistantResultsData["chips"];
-      inputs?: AssistantResultsData["inputs"];
-    }) => {
-      const { inputPatch } = buildAssistantSearchPayload({
-        items: [],
-        total: 0,
-        chips: data.chips,
-        inputs: data.inputs,
-      });
-      applyInputPatch(inputPatch);
+  const fetchSearch = useCallback(
+    (patch?: SearchInputPatch, options?: FetchOptions) => {
+      const merged = { ...formik.values, ...patch, page: patch?.page ?? 1 };
+      void formik.setValues(merged);
+      persistSearchInputs(merged);
+      setSearchSource("api");
+      void runSearch(merged, options);
     },
-    [applyInputPatch],
+    [formik, runSearch],
   );
 
   const setSearchInput = useCallback(
@@ -237,15 +263,6 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
   const submitSearch = useCallback(() => {
     void formik.submitForm();
   }, [formik]);
-
-  const refreshSearch = useCallback(
-    (patch?: SearchInputPatch) => {
-      const merged = { ...formik.values, ...patch, page: patch?.page ?? 1 };
-      void formik.setFieldValue("page", merged.page ?? 1);
-      void runSearch(merged);
-    },
-    [formik.values, runSearch],
-  );
 
   const loadMoreResults = useCallback(() => {
     const currentPage = formik.values.page ?? 1;
@@ -261,14 +278,12 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshMapBounds = useCallback(
     (bounds: string) => {
-      void formik.setFieldValue("bounds", bounds);
-      void formik.setFieldValue("page", 1);
-      void runSearch(
-        { ...formik.values, bounds, includeMapPins: true, page: 1 },
+      fetchSearch(
+        { bounds, includeMapPins: true, page: 1 },
         { preferCache: false },
       );
     },
-    [formik, runSearch],
+    [fetchSearch],
   );
 
   const viewType = formik.values.viewType ?? DEFAULT_VIEW_TYPE;
@@ -276,17 +291,26 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
   const setViewType = useCallback(
     (nextViewType: SearchViewType) => {
       void formik.setFieldValue("viewType", nextViewType);
-      if (nextViewType === "map") {
-        void formik.setFieldValue("includeMapPins", true);
-        void runSearch({
-          ...formik.values,
-          viewType: nextViewType,
-          includeMapPins: true,
-          page: 1,
-        });
+
+      if (nextViewType !== "map") return;
+
+      void formik.setFieldValue("includeMapPins", true);
+
+      if (
+        searchSource === "chat" &&
+        searchData?.mapPins &&
+        searchData.mapPins.length > 0
+      ) {
+        return;
       }
+
+      fetchSearch({
+        viewType: nextViewType,
+        includeMapPins: true,
+        page: 1,
+      });
     },
-    [formik, runSearch],
+    [fetchSearch, formik, searchData, searchSource],
   );
 
   const hasMoreResults = useMemo(() => {
@@ -302,13 +326,14 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
       setSearchInput,
       setViewType,
       submitSearch,
-      refreshSearch,
+      fetchSearch,
+      hydrateSearch,
       loadMoreResults,
       refreshMapBounds,
       searchData,
       searchSource,
-      applyChatSearchFromAssistant,
-      applyChatFiltersFromState,
+      assistantChips,
+      inputsRevision,
       hasMoreResults,
       isLoadingMore,
       isSearching: isFetching || formik.isSubmitting,
@@ -320,13 +345,14 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
       setSearchInput,
       setViewType,
       submitSearch,
-      refreshSearch,
+      fetchSearch,
+      hydrateSearch,
       loadMoreResults,
       refreshMapBounds,
       searchData,
       searchSource,
-      applyChatSearchFromAssistant,
-      applyChatFiltersFromState,
+      assistantChips,
+      inputsRevision,
       hasMoreResults,
       isLoadingMore,
       isFetching,

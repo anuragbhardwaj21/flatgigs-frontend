@@ -1,4 +1,5 @@
 import { buildSearchQueryFromSlots, slotsAreSearchable } from "@/context/chat/build-search-query-from-slots";
+import { normalizeAssistantResults } from "@/context/chat/normalize-chat-search";
 import {
   createAssistantChatMessage,
   normalizeChatMessages,
@@ -8,7 +9,6 @@ import {
   createChatWebSocket,
   type ChatWebSocketClient,
 } from "@/services/chat-websocket";
-import { useLazySearchQuery } from "@/store/services/search-api";
 import type {
   AgentTimelineStep,
   AssistantHistoryData,
@@ -117,12 +117,11 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const {
-    applyChatSearchFromAssistant,
-    applyChatFiltersFromState,
+    hydrateSearch,
+    fetchSearch,
     searchData,
     searchSource,
   } = useSearch();
-  const [triggerSearch] = useLazySearchQuery();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -144,24 +143,21 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const resultsAppliedRef = useRef(false);
 
   const refetchListingCards = useCallback(
-    async (state: ConversationState | null) => {
+    (state: ConversationState | null) => {
       if (resultsAppliedRef.current || searchSource === "chat") return;
       const query = buildSearchQueryFromSlots(state?.slots);
       if (!query) return;
 
-      try {
-        const result = await triggerSearch(query, true).unwrap();
-        applyChatSearchFromAssistant({
-          items: result.items,
-          total: result.total,
-          mapPins: result.mapPins,
-          facets: result.facets,
-        });
-      } catch {
-        /* optional on reconnect */
-      }
+      fetchSearch({
+        city: query.city,
+        checkIn: query.checkIn,
+        checkOut: query.checkOut,
+        adults: query.adults,
+        children: query.children,
+        page: 1,
+      });
     },
-    [applyChatSearchFromAssistant, searchSource, triggerSearch],
+    [fetchSearch, searchSource],
   );
 
   const applyHistory = useCallback(
@@ -282,9 +278,11 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             parsedFilters: data.parsedFilters ?? prev?.parsedFilters,
             slots: prev?.slots,
           }));
-          applyChatFiltersFromState({
+          hydrateSearch({
             chips: data.chips,
             inputs: data.inputs,
+            selectedFacets: data.selectedFacets,
+            source: "chat",
           });
           break;
         }
@@ -302,7 +300,13 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             });
           }
 
-          applyChatSearchFromAssistant(data);
+          hydrateSearch({
+            data: normalizeAssistantResults(data),
+            inputs: data.inputs,
+            chips: data.chips,
+            selectedFacets: data.selectedFacets,
+            source: "chat",
+          });
           setDrawerOpen(false);
           navigate(RESULTS_PATH);
           break;
@@ -385,8 +389,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     },
     [
       appendAssistantMessage,
-      applyChatFiltersFromState,
-      applyChatSearchFromAssistant,
+      hydrateSearch,
       applyHistory,
       navigate,
       pathname,

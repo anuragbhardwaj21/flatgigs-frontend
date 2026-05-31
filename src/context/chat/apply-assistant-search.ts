@@ -3,7 +3,11 @@ import {
   SEARCH_PRICE_MAX,
   SEARCH_PRICE_MIN,
 } from "@/context/search/constants";
-import type { AssistantChip, AssistantResultsData } from "@/store/types/chat";
+import type {
+  AssistantChip,
+  AssistantResultsData,
+  AssistantSelectedFacets,
+} from "@/store/types/chat";
 import type { SearchData } from "@/store/types/search";
 import { normalizeAssistantResults } from "./normalize-chat-search";
 
@@ -60,6 +64,29 @@ export const mapAssistantChipsToFilters = (
   return merged;
 };
 
+export const partitionAssistantChips = (
+  chips?: AssistantChip[] | unknown,
+): { filterChips: AssistantChip[]; displayChips: AssistantChip[] } => {
+  const filterChips: AssistantChip[] = [];
+  const displayChips: AssistantChip[] = [];
+
+  if (!Array.isArray(chips)) {
+    return { filterChips, displayChips };
+  }
+
+  for (const chip of chips) {
+    if (!chip || typeof chip !== "object") continue;
+    const value = "value" in chip ? String((chip as AssistantChip).value ?? "") : "";
+    if (parseChipValue(value)) {
+      filterChips.push(chip as AssistantChip);
+    } else {
+      displayChips.push(chip as AssistantChip);
+    }
+  }
+
+  return { filterChips, displayChips };
+};
+
 export type AssistantSearchInputs = Partial<SearchInputs> & {
   city?: string;
   checkIn?: string;
@@ -97,24 +124,144 @@ export const mapAssistantInputsToSearchInputs = (
   return patch;
 };
 
+const ratingTokenFromMin = (ratingMin: number): string => {
+  if (ratingMin >= 4.5) return "4.5";
+  if (ratingMin >= 4.0) return "4.0";
+  return String(ratingMin);
+};
+
+export const mapSelectedFacetsToSearchInputs = (
+  selected?: AssistantSelectedFacets | null,
+): Partial<SearchInputs> => {
+  if (!selected || typeof selected !== "object") return {};
+
+  const patch: Partial<SearchInputs> = {};
+
+  if (typeof selected.city === "string" && selected.city.trim()) {
+    patch.city = selected.city.trim();
+  }
+
+  if (selected.dates && typeof selected.dates === "object") {
+    if (selected.dates.checkIn) patch.checkIn = selected.dates.checkIn;
+    if (selected.dates.checkOut) patch.checkOut = selected.dates.checkOut;
+  }
+
+  if (selected.guests && typeof selected.guests === "object") {
+    if (selected.guests.adults != null) patch.adults = selected.guests.adults;
+    if (selected.guests.children != null) patch.children = selected.guests.children;
+    if (selected.guests.rooms != null) patch.rooms = selected.guests.rooms;
+  }
+
+  const price = selected.priceRange;
+  if (price && (price.min != null || price.max != null)) {
+    patch.priceRange = [
+      price.min ?? SEARCH_PRICE_MIN,
+      price.max ?? SEARCH_PRICE_MAX,
+    ];
+  }
+
+  const chips = defaultChipState();
+  let hasActiveChips = false;
+
+  if (selected.ratingMin != null && selected.ratingMin > 0) {
+    chips.rating = [ratingTokenFromMin(selected.ratingMin)];
+    hasActiveChips = true;
+  }
+
+  const propertyTypes = Object.entries(selected.propertyTypes ?? {})
+    .filter(([, active]) => active)
+    .map(([key]) => key);
+  if (propertyTypes.length > 0) {
+    chips.propertyType = propertyTypes;
+    hasActiveChips = true;
+  }
+
+  const amenities = Object.entries(selected.amenities ?? {})
+    .filter(([, active]) => active)
+    .map(([key]) => key);
+  if (amenities.length > 0) {
+    chips.amenities = amenities;
+    hasActiveChips = true;
+  }
+
+  if (hasActiveChips) {
+    patch.chips = chips;
+  }
+
+  return patch;
+};
+
+export const mapSelectedFacetsToDisplayChips = (
+  selected?: AssistantSelectedFacets | null,
+): AssistantChip[] => {
+  if (!selected || typeof selected !== "object") return [];
+
+  const chips: AssistantChip[] = [];
+
+  if (typeof selected.vibe === "string" && selected.vibe.trim()) {
+    const vibe = selected.vibe.trim();
+    chips.push({ label: vibe, value: `vibe:${vibe.toLowerCase()}` });
+  }
+
+  if (typeof selected.areaPreference === "string" && selected.areaPreference.trim()) {
+    const area = selected.areaPreference.trim();
+    chips.push({ label: area, value: `area:${area.toLowerCase()}` });
+  }
+
+  return chips;
+};
+
+const mergeDisplayChips = (...groups: AssistantChip[][]): AssistantChip[] => {
+  const byValue = new Map<string, AssistantChip>();
+  for (const group of groups) {
+    for (const chip of group) {
+      if (chip?.value) byValue.set(chip.value, chip);
+    }
+  }
+  return [...byValue.values()];
+};
+
 export type AssistantSearchPayload = {
-  searchData: SearchData;
+  searchData?: SearchData;
   inputPatch: Partial<SearchInputs>;
+  displayChips: AssistantChip[];
 };
 
 export const buildAssistantSearchPayload = (
-  data: AssistantResultsData,
+  data: Pick<
+    AssistantResultsData,
+    "items" | "total" | "chips" | "inputs" | "mapPins" | "facets" | "meta" | "selectedFacets"
+  > & {
+    items?: AssistantResultsData["items"];
+    total?: number;
+  },
 ): AssistantSearchPayload => {
+  const { filterChips, displayChips: chipDisplayChips } = partitionAssistantChips(data.chips);
+  const inputsPatch = mapAssistantInputsToSearchInputs(data.inputs);
+  const selectedPatch = mapSelectedFacetsToSearchInputs(data.selectedFacets);
+  const fallbackChipFilters = mapAssistantChipsToFilters(
+    filterChips.length ? filterChips : data.chips,
+  );
+
   const inputPatch: Partial<SearchInputs> = {
-    ...mapAssistantInputsToSearchInputs(
-      (data as AssistantResultsData & { inputs?: AssistantSearchInputs }).inputs,
-    ),
-    chips: mapAssistantChipsToFilters(data.chips),
+    ...inputsPatch,
+    ...selectedPatch,
+    chips: selectedPatch.chips ?? fallbackChipFilters,
     page: 1,
   };
 
+  const displayChips = mergeDisplayChips(
+    mapSelectedFacetsToDisplayChips(data.selectedFacets),
+    chipDisplayChips,
+  );
+
+  const hasResultItems = Array.isArray(data.items) && data.items.length > 0;
+
   return {
-    searchData: normalizeAssistantResults(data),
+    searchData: hasResultItems
+      ? normalizeAssistantResults(data as AssistantResultsData)
+      : undefined,
     inputPatch,
+    displayChips,
   };
 };

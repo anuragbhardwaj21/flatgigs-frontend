@@ -1,4 +1,5 @@
 export { SearchProvider, useSearch } from "./search-context";
+export type { FetchOptions, HydratePayload, SearchSource } from "./search-context";
 export { buildSearchQuery } from "./build-search-query";
 export {
   DEFAULT_SEARCH_SORT,
