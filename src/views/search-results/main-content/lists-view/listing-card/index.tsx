@@ -1,3 +1,4 @@
+import CompareAddButton from "@/components/molecules/compare-add-button";
 import WishlistButton from "@/components/molecules/wishlist-button";
 import { useIcon } from "@/hooks/use-icons";
 import type { SearchListingItem } from "@/store/types/search";
@@ -99,11 +100,14 @@ const ListingCard = ({
             {formatLabel(listing.propertyType)}
           </span>
         </div>
-        <WishlistButton
-          listingId={listing.id}
-          listingName={listing.name}
-          className="absolute! right-2! top-2!"
-        />
+        <div
+          className="absolute right-2 top-2 flex gap-1"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <CompareAddButton listing={listing} />
+          <WishlistButton listingId={listing.id} listingName={listing.name} />
+        </div>
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col justify-between gap-2.5 p-3 sm:gap-3 sm:p-4 md:p-5">

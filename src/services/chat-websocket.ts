@@ -47,18 +47,56 @@ const sendFrame = (ws: WebSocket, event: string, data: Record<string, unknown>) 
   ws.send(JSON.stringify({ event, data }));
 };
 
+const releaseWebSocket = (ws: WebSocket) => {
+  const state = ws.readyState;
+  if (state === WebSocket.CLOSED || state === WebSocket.CLOSING) return;
+
+  ws.onmessage = null;
+
+  if (state === WebSocket.CONNECTING) {
+    ws.onopen = () => {
+      ws.onopen = null;
+      ws.onerror = null;
+      ws.onclose = null;
+      ws.close(1000, "client_release");
+    };
+    ws.onerror = null;
+    ws.onclose = null;
+    return;
+  }
+
+  ws.onopen = null;
+  ws.onerror = null;
+  ws.onclose = null;
+  ws.close(1000, "client_release");
+};
+
 export const createChatWebSocket = (
   onEvent: ChatWsEventHandler,
   onConnectionChange?: (connected: boolean) => void,
 ): ChatWebSocketClient => {
   const token = getSessionToken();
   const ws = new WebSocket(buildChatWebSocketUrl(token));
+  let released = false;
 
-  ws.onopen = () => onConnectionChange?.(true);
-  ws.onclose = () => onConnectionChange?.(false);
-  ws.onerror = () => onConnectionChange?.(false);
+  ws.onopen = () => {
+    if (released) {
+      ws.close(1000, "client_release");
+      return;
+    }
+    onConnectionChange?.(true);
+  };
+
+  ws.onclose = () => {
+    if (!released) onConnectionChange?.(false);
+  };
+
+  ws.onerror = () => {
+    if (!released) onConnectionChange?.(false);
+  };
 
   ws.onmessage = (event) => {
+    if (released) return;
     try {
       const frame = JSON.parse(event.data as string) as WsFrame<unknown>;
       onEvent(frame);
@@ -88,7 +126,8 @@ export const createChatWebSocket = (
       sendFrame(ws, "ping", {});
     },
     close() {
-      ws.close();
+      released = true;
+      releaseWebSocket(ws);
     },
     readyState: () => ws.readyState,
   };

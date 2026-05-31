@@ -3,7 +3,6 @@ import {
   createAssistantChatMessage,
   normalizeChatMessages,
 } from "@/context/chat/normalize-chat-messages";
-import { normalizeAssistantResults } from "@/context/chat/normalize-chat-search";
 import { useSearch } from "@/context/search/search-context";
 import {
   createChatWebSocket,
@@ -11,15 +10,20 @@ import {
 } from "@/services/chat-websocket";
 import { useLazySearchQuery } from "@/store/services/search-api";
 import type {
+  AgentTimelineStep,
   AssistantHistoryData,
   AssistantMessageData,
   AssistantResultsData,
   AssistantStatusData,
+  ChatCitation,
   ChatMessage,
   ChatStatus,
+  CitationData,
   ConversationState,
   DoneData,
   StateUpdatedData,
+  StepCompletedData,
+  StepStartedData,
   WsFrame,
 } from "@/store/types/chat";
 import { isChatBusy, mapAssistantStatus } from "@/store/types/chat";
@@ -36,6 +40,8 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 
 const RESULTS_PATH = "/results";
+const MAX_TIMELINE_STEPS = 24;
+const MAX_CITATIONS = 12;
 
 const createOptimisticMessage = (content: string): ChatMessage => ({
   id: `local-${Date.now()}`,
@@ -57,7 +63,6 @@ const mergeMessages = (
   );
 };
 
-/** First message in a session uses chat.start; every follow-up uses chat.message */
 const shouldUseChatMessage = (
   conversationId: string | null,
   messages: ChatMessage[],
@@ -66,11 +71,34 @@ const shouldUseChatMessage = (
   return messages.some((message) => message.role === "user");
 };
 
+const pushTimelineStep = (
+  steps: AgentTimelineStep[],
+  next: Omit<AgentTimelineStep, "id" | "at" | "status"> & { status?: AgentTimelineStep["status"] },
+): AgentTimelineStep[] => {
+  const updated = steps.map((step) =>
+    step.status === "active" ? { ...step, status: "done" as const } : step,
+  );
+  const entry: AgentTimelineStep = {
+    id: `${next.agent ?? "agent"}-${next.step ?? "step"}-${Date.now()}`,
+    at: new Date().toISOString(),
+    status: next.status ?? "active",
+    agent: next.agent,
+    step: next.step,
+    label: next.label,
+    detail: next.detail,
+    progress: next.progress,
+  };
+  return [...updated, entry].slice(-MAX_TIMELINE_STEPS);
+};
+
 type ChatContextValue = {
   messages: ChatMessage[];
   conversationState: ConversationState | null;
   status: ChatStatus;
   statusLabel: string | null;
+  activeStatus: AssistantStatusData | null;
+  agentTimeline: AgentTimelineStep[];
+  citations: ChatCitation[];
   lastError: string | null;
   isWsReady: boolean;
   isBusy: boolean;
@@ -80,6 +108,7 @@ type ChatContextValue = {
   closeDrawer: () => void;
   sendMessage: (text: string) => void;
   cancelChat: () => void;
+  clearTimeline: () => void;
 };
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -87,7 +116,12 @@ const ChatContext = createContext<ChatContextValue | null>(null);
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { setChatSearchData, searchData } = useSearch();
+  const {
+    applyChatSearchFromAssistant,
+    applyChatFiltersFromState,
+    searchData,
+    searchSource,
+  } = useSearch();
   const [triggerSearch] = useLazySearchQuery();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -97,26 +131,37 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   );
   const [status, setStatus] = useState<ChatStatus>("connecting");
   const [statusLabel, setStatusLabel] = useState<string | null>(null);
+  const [activeStatus, setActiveStatus] = useState<AssistantStatusData | null>(null);
+  const [agentTimeline, setAgentTimeline] = useState<AgentTimelineStep[]>([]);
+  const [citations, setCitations] = useState<ChatCitation[]>([]);
   const [lastError, setLastError] = useState<string | null>(null);
   const [isWsReady, setIsWsReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const wsRef = useRef<ChatWebSocketClient | null>(null);
   const optimisticRef = useRef<ChatMessage[]>([]);
+  const citationsRef = useRef<ChatCitation[]>([]);
+  const resultsAppliedRef = useRef(false);
 
   const refetchListingCards = useCallback(
     async (state: ConversationState | null) => {
+      if (resultsAppliedRef.current || searchSource === "chat") return;
       const query = buildSearchQueryFromSlots(state?.slots);
       if (!query) return;
 
       try {
-        const result = await triggerSearch(query).unwrap();
-        setChatSearchData(result);
+        const result = await triggerSearch(query, true).unwrap();
+        applyChatSearchFromAssistant({
+          items: result.items,
+          total: result.total,
+          mapPins: result.mapPins,
+          facets: result.facets,
+        });
       } catch {
-        /* cards optional on reconnect */
+        /* optional on reconnect */
       }
     },
-    [setChatSearchData, triggerSearch],
+    [applyChatSearchFromAssistant, searchSource, triggerSearch],
   );
 
   const applyHistory = useCallback(
@@ -136,15 +181,30 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     [refetchListingCards],
   );
 
-  const appendAssistantMessage = useCallback((data: AssistantMessageData) => {
-    optimisticRef.current = [];
-    const next = createAssistantChatMessage(data);
-    setMessages((current) => {
-      if (current.some((message) => message.id === next.id)) return current;
-      return [...current, next].sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      );
-    });
+  const appendAssistantMessage = useCallback(
+    (data: AssistantMessageData, options?: { animate?: boolean; citations?: ChatCitation[]; resultsTotal?: number }) => {
+      optimisticRef.current = [];
+      const next = createAssistantChatMessage(data);
+      if (options?.animate) next.animate = true;
+      if (options?.citations?.length) next.citations = options.citations;
+      if (options?.resultsTotal != null) {
+        next.kind = "results";
+        next.resultsTotal = options.resultsTotal;
+      }
+      setMessages((current) => {
+        if (current.some((message) => message.id === next.id)) return current;
+        return [...current, next].sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        );
+      });
+    },
+    [],
+  );
+
+  const clearTimeline = useCallback(() => {
+    setAgentTimeline([]);
+    setCitations([]);
+    citationsRef.current = [];
   }, []);
 
   const handleWsFrame = useCallback(
@@ -177,15 +237,32 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         case "assistant.status": {
           const data = frame.envelope.data as AssistantStatusData | null;
           if (!data) return;
+          setActiveStatus(data);
           setStatus(mapAssistantStatus(data.status));
           setStatusLabel(data.label ?? null);
+          if (data.label) {
+            setAgentTimeline((steps) =>
+              pushTimelineStep(steps, {
+                agent: data.agent,
+                step: data.step,
+                label: data.label!,
+                detail: data.detail,
+                progress: data.progress,
+              }),
+            );
+          }
           break;
         }
 
         case "assistant.message": {
           const data = frame.envelope.data as AssistantMessageData | null;
           if (!data?.message) return;
-          appendAssistantMessage(data);
+          appendAssistantMessage(data, {
+            animate: data.messageType === "answer",
+            citations: citationsRef.current.length
+              ? [...citationsRef.current]
+              : undefined,
+          });
           if (data.messageType === "question") {
             setStatus("clarifying");
           }
@@ -205,6 +282,10 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             parsedFilters: data.parsedFilters ?? prev?.parsedFilters,
             slots: prev?.slots,
           }));
+          applyChatFiltersFromState({
+            chips: data.chips,
+            inputs: data.inputs,
+          });
           break;
         }
 
@@ -212,6 +293,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
           const data = frame.envelope.data as AssistantResultsData | null;
           if (!data) return;
           optimisticRef.current = [];
+          resultsAppliedRef.current = true;
 
           if (data.message?.trim()) {
             appendAssistantMessage({
@@ -220,31 +302,82 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             });
           }
 
-          setChatSearchData(normalizeAssistantResults(data));
+          applyChatSearchFromAssistant(data);
           setDrawerOpen(false);
           navigate(RESULTS_PATH);
           break;
         }
 
-        case "step_started":
+        case "step_started": {
+          const data = frame.envelope.data as StepStartedData | null;
           setStatus("searching");
+          if (data?.step) {
+            const step = data.step;
+            setAgentTimeline((steps) =>
+              pushTimelineStep(steps, {
+                agent: data.agent,
+                step,
+                label: step.replace(/_/g, " "),
+              }),
+            );
+          }
           break;
+        }
+
+        case "step_completed": {
+          const data = frame.envelope.data as StepCompletedData | null;
+          if (data?.step) {
+            setAgentTimeline((steps) =>
+              steps.map((step) =>
+                step.step === data.step && step.status === "active"
+                  ? { ...step, status: "done" }
+                  : step,
+              ),
+            );
+          }
+          break;
+        }
+
+        case "citation": {
+          const data = frame.envelope.data as CitationData | null;
+          if (!data?.listingId) return;
+          const citation: ChatCitation = {
+            listingId: data.listingId,
+            reviewId: data.reviewId,
+            excerpt: data.excerpt,
+          };
+          setCitations((prev) => {
+            const next = [...prev, citation].slice(-MAX_CITATIONS);
+            citationsRef.current = next;
+            return next;
+          });
+          break;
+        }
 
         case "done": {
           const data = frame.envelope.data as DoneData | null;
           if (data?.answer?.trim()) {
-            appendAssistantMessage({
-              message: data.answer.trim(),
-              messageType: "answer",
-            });
+            appendAssistantMessage(
+              {
+                message: data.answer.trim(),
+                messageType: "answer",
+              },
+              {
+                animate: true,
+                citations: citationsRef.current.length
+                  ? [...citationsRef.current]
+                  : undefined,
+              },
+            );
           }
           setStatus("idle");
+          setAgentTimeline((steps) =>
+            steps.map((step) =>
+              step.status === "active" ? { ...step, status: "done" } : step,
+            ),
+          );
           break;
         }
-
-        case "citation":
-        case "step_completed":
-          break;
 
         default:
           break;
@@ -252,33 +385,47 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     },
     [
       appendAssistantMessage,
+      applyChatFiltersFromState,
+      applyChatSearchFromAssistant,
       applyHistory,
       navigate,
       pathname,
-      setChatSearchData,
     ],
   );
 
+  const handleWsFrameRef = useRef(handleWsFrame);
+  handleWsFrameRef.current = handleWsFrame;
+
   useEffect(() => {
-    const client = createChatWebSocket(handleWsFrame, (connected) => {
-      setIsWsReady(connected);
-      if (!connected) setStatus("connecting");
-    });
+    const client = createChatWebSocket(
+      (frame) => handleWsFrameRef.current(frame),
+      (connected) => {
+        setIsWsReady(connected);
+        if (!connected) setStatus("connecting");
+      },
+    );
     wsRef.current = client;
 
     return () => {
       client.close();
       wsRef.current = null;
     };
-  }, [handleWsFrame]);
+  }, []);
 
   useEffect(() => {
     if (pathname !== RESULTS_PATH) return;
     if (searchData) return;
+    if (searchSource === "chat") return;
     if (!slotsAreSearchable(conversationState?.slots)) return;
 
     void refetchListingCards(conversationState);
-  }, [pathname, searchData, conversationState, refetchListingCards]);
+  }, [
+    pathname,
+    searchData,
+    searchSource,
+    conversationState,
+    refetchListingCards,
+  ]);
 
   const sendMessage = useCallback(
     (text: string) => {
@@ -299,6 +446,10 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       setMessages((current) => mergeMessages(current, optimisticRef.current));
       setDrawerOpen(true);
       setLastError(null);
+      clearTimeline();
+      citationsRef.current = [];
+      setCitations([]);
+      resultsAppliedRef.current = false;
 
       if (useChatMessage) {
         client.sendChatMessage(trimmed);
@@ -306,7 +457,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         client.sendChatStart(trimmed);
       }
     },
-    [conversationId, messages],
+    [clearTimeline, conversationId, messages],
   );
 
   const cancelChat = useCallback(() => {
@@ -324,6 +475,9 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       conversationState,
       status,
       statusLabel,
+      activeStatus,
+      agentTimeline,
+      citations,
       lastError,
       isWsReady,
       isBusy,
@@ -333,12 +487,16 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       closeDrawer,
       sendMessage,
       cancelChat,
+      clearTimeline,
     }),
     [
       messages,
       conversationState,
       status,
       statusLabel,
+      activeStatus,
+      agentTimeline,
+      citations,
       lastError,
       isWsReady,
       isBusy,
@@ -347,6 +505,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       closeDrawer,
       sendMessage,
       cancelChat,
+      clearTimeline,
     ],
   );
 

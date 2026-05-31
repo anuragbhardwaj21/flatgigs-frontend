@@ -3,11 +3,14 @@ import { useSearch } from "@/context/search";
 import cn from "@/utils/cn";
 import ListsView from "@/views/search-results/main-content/lists-view";
 import Spinner from "@/components/atoms/spinner";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { lazy, Suspense } from "react";
 
 const MapView = lazy(
   () => import("@/views/search-results/main-content/map-view"),
 );
+
+const PULSE_DURATION = 2.4;
 
 const MapViewFallback = () => (
   <div className="flex h-[calc(100dvh-220px)] min-h-[420px] items-center justify-center rounded-[1.25rem] bg-black/5 ring-1 ring-black/8">
@@ -15,14 +18,71 @@ const MapViewFallback = () => (
   </div>
 );
 
+type SearchLoadingOverlayProps = {
+  show: boolean;
+  mapLayout?: boolean;
+};
+
+const overlayPositionClass = (mapLayout?: boolean) =>
+  cn(
+    "pointer-events-none z-50",
+    mapLayout
+      ? "max-lg:fixed max-lg:inset-x-0 max-lg:top-[220px] max-lg:bottom-0 lg:absolute lg:inset-0"
+      : "absolute inset-0",
+  );
+
+const SearchLoadingOverlay = ({ show, mapLayout }: SearchLoadingOverlayProps) => {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <AnimatePresence>
+      {show ? (
+        <motion.div
+          key="search-main-overlay"
+          role="status"
+          aria-live="polite"
+          aria-label="Updating results"
+          className={overlayPositionClass(mapLayout)}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+        >
+          <motion.div
+            className="size-full bg-white"
+            initial={false}
+            animate={
+              reduceMotion ? { opacity: 0.12 } : { opacity: [0.1, 0.15, 0.1] }
+            }
+            transition={
+              reduceMotion
+                ? undefined
+                : {
+                    duration: PULSE_DURATION,
+                    ease: "easeInOut",
+                    repeat: Infinity,
+                    times: [0, 0.5, 1],
+                  }
+            }
+          />
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
+};
+
 const MainContent = () => {
-  const { viewType } = useSearch();
+  const { viewType, isSearching, isLoadingMore, searchData } = useSearch();
   const { mapExpanded, mobileListOpen } = useMapResults();
+
+  const showLoadingOverlay =
+    isSearching && !isLoadingMore && searchData != null;
 
   if (viewType === "list") {
     return (
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1">
         <ListsView />
+        <SearchLoadingOverlay show={showLoadingOverlay} />
       </div>
     );
   }
@@ -52,6 +112,8 @@ const MainContent = () => {
           )}
         />
       </Suspense>
+
+      <SearchLoadingOverlay show={showLoadingOverlay} mapLayout />
     </div>
   );
 };

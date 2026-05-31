@@ -7,7 +7,7 @@ import { GrDocumentMissing } from "react-icons/gr";
 import { IoCloseOutline } from "react-icons/io5";
 import { BsStars } from "react-icons/bs";
 import { FaLocationDot } from "react-icons/fa6";
-import { FiUsers } from "react-icons/fi";
+import { FiCheck, FiPlus, FiUsers } from "react-icons/fi";
 import { BiSolidCommentDetail } from "react-icons/bi";  
 import { IoIosSend } from "react-icons/io";
 import { CiGrid41 } from "react-icons/ci";
@@ -37,6 +37,8 @@ export const ICON_REGISTRY = {
   heart: VscHeart,
   heartFilled: VscHeartFilled,
   star: FaStar,
+  plus: FiPlus,
+  check: FiCheck,
 } as const satisfies Record<string, IconType>;
 
 export type IconName = keyof typeof ICON_REGISTRY;

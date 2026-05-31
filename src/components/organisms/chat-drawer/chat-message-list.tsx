@@ -1,5 +1,8 @@
 import BrandIcon from "@/components/atoms/brand-icon";
 import Spinner from "@/components/atoms/spinner";
+import AssistantMessageBubble, {
+  AssistantAvatar,
+} from "@/components/organisms/chat-drawer/assistant-message-bubble";
 import type { ChatMessage, ChatStatus } from "@/store/types/chat";
 import cn from "@/utils/cn";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -18,9 +21,7 @@ const TypingIndicator = () => (
     exit={{ opacity: 0, y: -6 }}
     className="mr-auto flex max-w-[88%] items-end gap-2"
   >
-    <div className="shrink-0 rounded-lg bg-main/5">
-      <BrandIcon />
-    </div>
+    <AssistantAvatar />
     <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-main/15 bg-main/5 px-4 py-3">
       <span className="flex gap-1">
         {[0, 1, 2].map((i) => (
@@ -122,33 +123,22 @@ const ChatMessageList = ({
                     isUser ? "flex-row-reverse" : "flex-row",
                   )}
                 >
-                  {!isUser ? (
-                    <div className="mt-1 shrink-0 self-end rounded-lg bg-main/5">
-                      <BrandIcon />
-                    </div>
-                  ) : null}
-                  <div
-                    className={cn(
-                      "flex max-w-[85%] flex-col gap-1",
-                      isUser ? "items-end" : "items-start",
-                    )}
-                  >
-                    {!isUser ? (
-                      <span className="px-1 text-[10px] font-semibold uppercase tracking-wider text-main/80">
-                        Concierge
-                      </span>
-                    ) : null}
+                  {isUser ? (
                     <div
                       className={cn(
-                        "rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm",
-                        isUser
-                          ? "rounded-br-md bg-main text-white shadow-[0_6px_16px_-8px_color-mix(in_srgb,var(--color-main)_55%,transparent)]"
-                          : "rounded-bl-md border border-main/12 bg-white text-black/80",
+                        "flex max-w-[85%] flex-col gap-1 items-end",
                       )}
                     >
-                      {message.content}
+                      <div className="rounded-2xl rounded-br-md bg-main px-3.5 py-2.5 text-sm leading-relaxed text-white shadow-[0_6px_16px_-8px_color-mix(in_srgb,var(--color-main)_55%,transparent)]">
+                        {message.content}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      <AssistantAvatar />
+                      <AssistantMessageBubble message={message} />
+                    </>
+                  )}
                 </motion.li>
               );
             })}

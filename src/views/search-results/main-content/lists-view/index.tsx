@@ -3,6 +3,7 @@ import { useSearch } from "@/context/search";
 import cn from "@/utils/cn";
 import ListingCard from "@/views/search-results/main-content/lists-view/listing-card";
 import { ListsViewSkeleton } from "@/views/search-results/skeleton/listing-card-skeleton";
+import { Button } from "@mui/material";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef } from "react";
 
@@ -38,7 +39,13 @@ type ListsViewProps = {
 };
 
 const ListsView = ({ variant = "full" }: ListsViewProps) => {
-  const { searchData, isSearching } = useSearch();
+  const {
+    searchData,
+    isSearching,
+    hasMoreResults,
+    isLoadingMore,
+    loadMoreResults,
+  } = useSearch();
   const { hoveredListingId, setHoveredListingId } = useMapResults();
   const listRef = useRef<HTMLUListElement>(null);
   const items = searchData?.items ?? [];
@@ -109,6 +116,20 @@ const ListsView = ({ variant = "full" }: ListsViewProps) => {
               </motion.li>
             ))}
           </motion.ul>
+          {hasMoreResults ? (
+            <div className="mt-4 flex justify-center">
+              <Button
+                type="button"
+                variant="outlined"
+                color="primary"
+                disabled={isLoadingMore}
+                onClick={loadMoreResults}
+                className="rounded-full! px-6! font-semibold!"
+              >
+                {isLoadingMore ? "Loading…" : "Load more stays"}
+              </Button>
+            </div>
+          ) : null}
         </motion.div>
       )}
     </AnimatePresence>

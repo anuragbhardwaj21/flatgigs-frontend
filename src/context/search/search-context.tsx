@@ -1,5 +1,6 @@
+
 import { buildSearchQuery } from "@/context/search/build-search-query";
-import { DEFAULT_VIEW_TYPE } from "@/context/search/constants";
+import { DEFAULT_VIEW_TYPE, SEARCH_PAGE_LIMIT } from "@/context/search/constants";
 import type {
   SearchInputPatch,
   SearchInputs,
@@ -10,8 +11,10 @@ import {
   persistSearchInputs,
 } from "@/context/search/persist";
 import { searchValidationSchema } from "@/context/search/validation";
+import type { AssistantResultsData } from "@/store/types/chat";
 import { useLazySearchQuery } from "@/store/services/search-api";
 import type { SearchData } from "@/store/types/search";
+import { buildAssistantSearchPayload } from "@/context/chat/apply-assistant-search";
 import { FormikProvider, useFormik, type FormikProps } from "formik";
 import {
   createContext,
@@ -37,15 +40,36 @@ type SearchContextValue = {
   setViewType: (viewType: SearchViewType) => void;
   submitSearch: () => void;
   refreshSearch: (patch?: SearchInputPatch) => void;
+  loadMoreResults: () => void;
   refreshMapBounds: (bounds: string) => void;
   searchData: SearchData | null;
   searchSource: SearchSource;
-  setChatSearchData: (data: SearchData) => void;
+  applyChatSearchFromAssistant: (data: AssistantResultsData) => void;
+  applyChatFiltersFromState: (data: {
+    chips?: AssistantResultsData["chips"];
+    inputs?: AssistantResultsData["inputs"];
+  }) => void;
+  hasMoreResults: boolean;
+  isLoadingMore: boolean;
   isSearching: boolean;
   searchError: string | null;
 };
 
 const SearchContext = createContext<SearchContextValue | null>(null);
+
+const mergeSearchPages = (prev: SearchData | null, next: SearchData, page: number): SearchData => {
+  if (!prev || page <= 1) return next;
+  const seen = new Set(prev.items.map((item) => item.id));
+  const mergedItems = [
+    ...prev.items,
+    ...next.items.filter((item) => !seen.has(item.id)),
+  ];
+  return {
+    ...next,
+    items: mergedItems,
+    mapPins: page === 1 ? next.mapPins : [...(prev.mapPins ?? []), ...next.mapPins],
+  };
+};
 
 export const SearchProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
@@ -54,36 +78,53 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
   const [searchData, setSearchData] = useState<SearchData | null>(null);
   const [searchSource, setSearchSource] = useState<SearchSource>("form");
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const hasRestoredResultsRef = useRef(false);
 
   const runSearch = useCallback(
-    async (values: SearchInputs, options?: { navigate?: boolean }) => {
+    async (
+      values: SearchInputs,
+      options?: { navigate?: boolean; append?: boolean; page?: number },
+    ) => {
       setSearchError(null);
-
-      const query = buildSearchQuery(values);
+      const page = options?.page ?? values.page ?? 1;
+      const queryValues = {
+        ...values,
+        page,
+        limit: values.limit ?? SEARCH_PAGE_LIMIT,
+      };
+      const query = buildSearchQuery(queryValues);
       if (!query) return false;
 
       try {
-        const result = await triggerSearch(query).unwrap();
+        const result = await triggerSearch(query, true).unwrap();
         setSearchSource("form");
-        setSearchData(result);
-        persistSearchInputs(values);
+        setSearchData((prev) =>
+          options?.append ? mergeSearchPages(prev, result, page) : result,
+        );
+        persistSearchInputs(queryValues);
         if (options?.navigate) navigate(RESULTS_PATH);
         return true;
       } catch {
         setSearchError("Search failed. Please try again.");
         return false;
+      } finally {
+        setIsLoadingMore(false);
       }
     },
     [navigate, triggerSearch],
   );
 
   const formik = useFormik<SearchInputs>({
-    initialValues: loadPersistedSearchInputs(),
+    initialValues: {
+      ...loadPersistedSearchInputs(),
+      limit: SEARCH_PAGE_LIMIT,
+      page: 1,
+    },
     validationSchema: searchValidationSchema,
     validateOnMount: true,
     onSubmit: async (values, { setSubmitting }) => {
-      await runSearch(values, { navigate: true });
+      await runSearch({ ...values, page: 1 }, { navigate: true });
       setSubmitting(false);
     },
   });
@@ -98,6 +139,7 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    if (searchSource === "chat" && searchData) return;
     if (searchData || hasRestoredResultsRef.current) return;
 
     const query = buildSearchQuery(formik.values);
@@ -108,7 +150,7 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
     void (async () => {
       setSearchError(null);
       try {
-        const result = await triggerSearch(query).unwrap();
+        const result = await triggerSearch(query, true).unwrap();
         setSearchSource("form");
         setSearchData(result);
       } catch {
@@ -116,25 +158,54 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
         hasRestoredResultsRef.current = false;
       }
     })();
-  }, [pathname, searchData, formik.values, triggerSearch]);
+  }, [pathname, searchData, searchSource, formik.values, triggerSearch]);
 
-  const setChatSearchData = useCallback((data: SearchData) => {
-    setSearchError(null);
-    setSearchSource("chat");
-    setSearchData(data);
-    hasRestoredResultsRef.current = true;
-  }, []);
-
-  const setSearchInput = useCallback(
-    (patch: SearchInputPatch) => {
+  const applyInputPatch = useCallback(
+    (patch: Partial<SearchInputs>) => {
       for (const [key, value] of Object.entries(patch) as [
         keyof SearchInputs,
         SearchInputs[keyof SearchInputs],
       ][]) {
         void formik.setFieldValue(key, value);
       }
+      persistSearchInputs({ ...formik.values, ...patch });
     },
     [formik],
+  );
+
+  const applyChatSearchFromAssistant = useCallback(
+    (data: AssistantResultsData) => {
+      const { searchData: nextData, inputPatch } = buildAssistantSearchPayload(data);
+      setSearchError(null);
+      setSearchSource("chat");
+      setSearchData(nextData);
+      hasRestoredResultsRef.current = true;
+      applyInputPatch(inputPatch);
+    },
+    [applyInputPatch],
+  );
+
+  const applyChatFiltersFromState = useCallback(
+    (data: {
+      chips?: AssistantResultsData["chips"];
+      inputs?: AssistantResultsData["inputs"];
+    }) => {
+      const { inputPatch } = buildAssistantSearchPayload({
+        items: [],
+        total: 0,
+        chips: data.chips,
+        inputs: data.inputs,
+      });
+      applyInputPatch(inputPatch);
+    },
+    [applyInputPatch],
+  );
+
+  const setSearchInput = useCallback(
+    (patch: SearchInputPatch) => {
+      applyInputPatch(patch);
+    },
+    [applyInputPatch],
   );
 
   const submitSearch = useCallback(() => {
@@ -143,14 +214,28 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshSearch = useCallback(
     (patch?: SearchInputPatch) => {
-      void runSearch(patch ? { ...formik.values, ...patch } : formik.values);
+      const merged = { ...formik.values, ...patch, page: patch?.page ?? 1 };
+      void formik.setFieldValue("page", merged.page ?? 1);
+      void runSearch(merged);
     },
     [formik.values, runSearch],
   );
 
+  const loadMoreResults = useCallback(() => {
+    const currentPage = formik.values.page ?? 1;
+    const nextPage = currentPage + 1;
+    if (searchData && searchData.items.length >= searchData.total) return;
+    setIsLoadingMore(true);
+    void formik.setFieldValue("page", nextPage);
+    void runSearch(
+      { ...formik.values, page: nextPage },
+      { append: true, page: nextPage },
+    );
+  }, [formik, runSearch, searchData]);
+
   const refreshMapBounds = useCallback(
     (bounds: string) => {
-      void runSearch({ ...formik.values, bounds, includeMapPins: true });
+      void runSearch({ ...formik.values, bounds, includeMapPins: true, page: 1 });
     },
     [formik.values, runSearch],
   );
@@ -166,11 +251,17 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
           ...formik.values,
           viewType: nextViewType,
           includeMapPins: true,
+          page: 1,
         });
       }
     },
     [formik, runSearch],
   );
+
+  const hasMoreResults = useMemo(() => {
+    if (!searchData) return false;
+    return searchData.items.length < searchData.total;
+  }, [searchData]);
 
   const value = useMemo<SearchContextValue>(
     () => ({
@@ -181,10 +272,14 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
       setViewType,
       submitSearch,
       refreshSearch,
+      loadMoreResults,
       refreshMapBounds,
       searchData,
       searchSource,
-      setChatSearchData,
+      applyChatSearchFromAssistant,
+      applyChatFiltersFromState,
+      hasMoreResults,
+      isLoadingMore,
       isSearching: isFetching || formik.isSubmitting,
       searchError,
     }),
@@ -195,10 +290,14 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
       setViewType,
       submitSearch,
       refreshSearch,
+      loadMoreResults,
       refreshMapBounds,
       searchData,
       searchSource,
-      setChatSearchData,
+      applyChatSearchFromAssistant,
+      applyChatFiltersFromState,
+      hasMoreResults,
+      isLoadingMore,
       isFetching,
       searchError,
     ],

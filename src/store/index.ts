@@ -1,17 +1,32 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
+import {
+  FLUSH,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+  REHYDRATE,
+  persistStore,
+} from "redux-persist";
 import { setupListeners } from "@reduxjs/toolkit/query/react";
 import { api } from "./api";
+import { persistedCompareReducer } from "./persist";
+import "./services/compare-api";
 import "./services/listings-api";
 import "./services/search-api";
 import "./services/wishlist-api";
 
+const rootReducer = combineReducers({
+  [api.reducerPath]: api.reducer,
+  compare: persistedCompareReducer,
+});
+
 export const store = configureStore({
-  reducer: {
-    [api.reducerPath]: api.reducer,
-  },
+  reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         ignoredPaths: [api.reducerPath],
         ignoredActionPaths: ["meta.arg", "meta.baseQueryMeta", "payload"],
       },
@@ -20,6 +35,8 @@ export const store = configureStore({
       },
     }).concat(api.middleware),
 });
+
+export const persistor = persistStore(store);
 
 setupListeners(store.dispatch);
 

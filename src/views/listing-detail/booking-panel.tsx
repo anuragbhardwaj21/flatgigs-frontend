@@ -44,6 +44,7 @@ const BookingPanel = () => {
     guestCount,
     setGuestCount,
     maxGuests,
+    calendar,
     loadCalendar,
   } = useListingDetail();
 
@@ -55,6 +56,17 @@ const BookingPanel = () => {
   const checkIn = stayDates ? dayjs(stayDates.checkIn) : null;
   const checkOut = stayDates ? dayjs(stayDates.checkOut) : null;
   const minCheckIn = dayjs().add(1, "day");
+
+  const unavailableDates = useMemo(() => {
+    const set = new Set<string>();
+    for (const day of calendar?.days ?? []) {
+      if (!day.available) set.add(day.date);
+    }
+    return set;
+  }, [calendar?.days]);
+
+  const isDateUnavailable = (date: Dayjs) =>
+    unavailableDates.has(date.format("YYYY-MM-DD"));
 
   useEffect(() => {
     loadCalendar({
@@ -138,6 +150,7 @@ const BookingPanel = () => {
                   onDateOpen={() => setOpenDate("checkIn")}
                   onDateClose={() => setOpenDate(null)}
                   minDate={minCheckIn}
+                  shouldDisableDate={isDateUnavailable}
                 />
                 <RenderInput
                   className="min-h-[3rem]! rounded-none! bg-transparent! px-3! py-2! hover:bg-black/3!"
@@ -150,6 +163,7 @@ const BookingPanel = () => {
                   onDateOpen={() => setOpenDate("checkOut")}
                   onDateClose={() => setOpenDate(null)}
                   minDate={checkIn?.add(1, "day") ?? minCheckIn.add(1, "day")}
+                  shouldDisableDate={isDateUnavailable}
                 />
               </div>
               <div className="border-t border-black/6 bg-white/60">

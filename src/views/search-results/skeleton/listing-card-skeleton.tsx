@@ -37,9 +37,9 @@ const ListingCardSkeleton = () => (
         <Skeleton variant="text" width="78%" height={28} animation="wave" />
         <Skeleton variant="text" width={132} height={20} animation="wave" />
         <div className="flex flex-wrap gap-1.5 pt-0.5">
-          {chipSkeletonWidths.map((width) => (
+          {chipSkeletonWidths.map((width, index) => (
             <Skeleton
-              key={width}
+              key={`amenity-chip-skeleton-${index}`}
               variant="rounded"
               animation="wave"
               width={width}

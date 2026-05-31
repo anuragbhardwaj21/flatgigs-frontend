@@ -1,4 +1,5 @@
 import CustomDrawer from "@/components/molecules/custom-drawer";
+import AgentStatusTimeline from "@/components/organisms/chat-drawer/agent-status-timeline";
 import ChatComposer from "@/components/organisms/chat-drawer/chat-composer";
 import ChatMessageList from "@/components/organisms/chat-drawer/chat-message-list";
 import { useChat } from "@/context/chat";
@@ -265,7 +266,10 @@ const ChatDrawer = ({
               layout
               className={cn(
                 "mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
-                (status === "searching" || status === "thinking" || status === "typing") &&
+                (status === "searching" ||
+                  status === "thinking" ||
+                  status === "typing" ||
+                  status === "summarizing") &&
                   "bg-main/15 text-main",
                 status === "clarifying" && "bg-amber-500/15 text-amber-800",
                 status === "error" && "bg-red-500/15 text-red-700",
@@ -282,6 +286,8 @@ const ChatDrawer = ({
               {statusLabel}
             </motion.span>
           </header>
+
+          <AgentStatusTimeline />
 
           <ChatMessageList
             messages={messages}

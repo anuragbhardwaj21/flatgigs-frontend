@@ -2,6 +2,7 @@ import { Suspense, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import Spinner from "@/components/atoms/spinner";
 import WishlistPrefetch from "@/components/molecules/wishlist-prefetch";
+import CompareFab from "@/components/organisms/compare-fab";
 import ChatDrawer from "@/components/organisms/chat-drawer";
 import Header from "@/components/organisms/header";
 import { ChatProvider } from "@/context/chat";
@@ -27,6 +28,7 @@ const RootLayout = () => {
           >
             <Outlet />
           </Suspense>
+          <CompareFab />
           <ChatDrawer dragConstraintsRef={mainRef} />
         </main>
       </ChatProvider>

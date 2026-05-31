@@ -4,17 +4,19 @@ import type {
   AddWishlistResponse,
   RemoveWishlistResponse,
   WishlistData,
+  WishlistListing,
 } from "../types/wishlist";
 
 const WISHLIST_TAG = { type: "Wishlist" as const, id: "LIST" };
 
-const patchWishlistIds = (
+const patchWishlistItems = (
   dispatch: AppDispatch,
-  updater: (ids: string[]) => string[],
+  updater: (items: WishlistListing[]) => WishlistListing[],
 ) =>
   dispatch(
     wishlistApi.util.updateQueryData("getWishlist", undefined, (draft) => {
-      draft.listingIds = updater(draft.listingIds);
+      draft.items = updater(draft.items);
+      draft.total = draft.items.length;
     }),
   );
 
@@ -31,16 +33,7 @@ export const wishlistApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
-      async onQueryStarted({ listingId }, { dispatch, queryFulfilled }) {
-        const patch = patchWishlistIds(dispatch, (ids) =>
-          ids.includes(listingId) ? ids : [...ids, listingId],
-        );
-        try {
-          await queryFulfilled;
-        } catch {
-          patch.undo();
-        }
-      },
+      invalidatesTags: [WISHLIST_TAG],
     }),
 
     removeFromWishlist: build.mutation<RemoveWishlistResponse, string>({
@@ -49,8 +42,8 @@ export const wishlistApi = api.injectEndpoints({
         method: "DELETE",
       }),
       async onQueryStarted(listingId, { dispatch, queryFulfilled }) {
-        const patch = patchWishlistIds(dispatch, (ids) =>
-          ids.filter((id) => id !== listingId),
+        const patch = patchWishlistItems(dispatch, (items) =>
+          items.filter((item) => item.id !== listingId),
         );
         try {
           await queryFulfilled;

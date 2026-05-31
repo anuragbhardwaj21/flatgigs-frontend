@@ -9,6 +9,7 @@ export type MapPinPoint = {
 
 const CITY_CENTERS: Record<string, [number, number]> = {
   lisbon: [-9.1393, 38.7223],
+  barcelona: [2.1734, 41.3851],
   porto: [-8.6291, 41.1579],
 };
 

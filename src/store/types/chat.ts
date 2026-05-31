@@ -31,17 +31,31 @@ export type ChatServerEvent =
   | "done"
   | "error";
 
+export type AssistantAgent = "concierge" | "retrieval" | "review" | string;
+
 export type AssistantStatusValue =
   | "online"
+  | "idle"
   | "thinking"
   | "typing"
   | "searching"
-  | "idle";
+  | "summarizing"
+  | "error";
 
 export type AssistantStatusData = {
   status: AssistantStatusValue;
   label?: string;
-  agent?: string;
+  agent?: AssistantAgent;
+  phase?: ConversationPhase;
+  step?: string;
+  progress?: number;
+  detail?: string;
+  requestId?: string;
+};
+
+export type AssistantChip = {
+  label: string;
+  value: string;
 };
 
 export type AssistantMessageType = "question" | "transition" | "answer";
@@ -57,7 +71,17 @@ export type AssistantResultsData = {
   items: SearchListingItem[];
   total: number;
   mapPins?: SearchMapPin[];
-  chips?: unknown;
+  chips?: AssistantChip[];
+  inputs?: {
+    city?: string;
+    checkIn?: string;
+    checkOut?: string;
+    adults?: number;
+    children?: number;
+    rooms?: number;
+    priceMin?: number;
+    priceMax?: number;
+  };
   meta?: { facets?: SearchData["facets"]; [key: string]: unknown };
   facets?: SearchData["facets"];
 };
@@ -66,6 +90,12 @@ export type ChatMessageRole = "user" | "assistant";
 
 export type ChatMessageKind = "text" | "results";
 
+export type ChatCitation = {
+  listingId: string;
+  reviewId?: string;
+  excerpt?: string;
+};
+
 export type ChatMessage = {
   id: string;
   role: ChatMessageRole;
@@ -73,6 +103,20 @@ export type ChatMessage = {
   createdAt: string;
   kind?: ChatMessageKind;
   messageType?: AssistantMessageType;
+  citations?: ChatCitation[];
+  animate?: boolean;
+  resultsTotal?: number;
+};
+
+export type AgentTimelineStep = {
+  id: string;
+  agent?: AssistantAgent;
+  step?: string;
+  label: string;
+  detail?: string;
+  progress?: number;
+  status: "active" | "done";
+  at: string;
 };
 
 export type ConversationSlots = {
@@ -97,7 +141,7 @@ export type ConversationState = {
   missingMandatory?: string[];
   missingFields?: string[];
   parsedFilters?: unknown;
-  chips?: unknown;
+  chips?: AssistantChip[];
   [key: string]: unknown;
 };
 
@@ -112,7 +156,8 @@ export type ChatSessionData = AssistantHistoryData;
 
 export type StateUpdatedData = {
   parsedFilters?: unknown;
-  chips?: unknown;
+  chips?: AssistantChip[];
+  inputs?: AssistantResultsData["inputs"];
   phase?: ConversationPhase;
   missingMandatory?: string[];
   missingFields?: string[];
@@ -124,13 +169,23 @@ export type CitationData = {
   excerpt?: string;
 };
 
+export type StepStartedData = {
+  step?: string;
+  agent?: AssistantAgent;
+};
+
+export type StepCompletedData = {
+  step?: string;
+  agent?: AssistantAgent;
+  durationMs?: number;
+};
+
 export type DoneData = {
   answer?: string;
   usage?: unknown;
   meta?: unknown;
 };
 
-/** UI-facing status mapped from assistant.status + connection */
 export type ChatStatus =
   | "connecting"
   | "ready"
@@ -138,6 +193,7 @@ export type ChatStatus =
   | "thinking"
   | "typing"
   | "searching"
+  | "summarizing"
   | "clarifying"
   | "error";
 
@@ -147,7 +203,8 @@ export const isChatBusy = (status: ChatStatus): boolean =>
   status === "connecting" ||
   status === "thinking" ||
   status === "typing" ||
-  status === "searching";
+  status === "searching" ||
+  status === "summarizing";
 
 export const mapAssistantStatus = (value: AssistantStatusValue): ChatStatus => {
   switch (value) {
@@ -157,8 +214,12 @@ export const mapAssistantStatus = (value: AssistantStatusValue): ChatStatus => {
       return "typing";
     case "searching":
       return "searching";
+    case "summarizing":
+      return "summarizing";
     case "idle":
       return "idle";
+    case "error":
+      return "error";
     case "online":
     default:
       return "ready";

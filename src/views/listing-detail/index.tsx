@@ -1,5 +1,7 @@
+import CompareAddButton from "@/components/molecules/compare-add-button";
 import WishlistButton from "@/components/molecules/wishlist-button";
 import { useListingDetail } from "@/context/listing-detail";
+import type { SearchListingItem } from "@/store/types/search";
 import { useIcon } from "@/hooks/use-icons";
 import type { AspectScores } from "@/store/types/listings";
 import cn from "@/utils/cn";
@@ -8,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import BookingPanel from "./booking-panel";
 import { formatLabel, splitDescription } from "./format";
 import HeroGallery from "./hero-gallery";
+import DetailLocationMap from "./detail-location-map";
 import ReviewsSection from "./reviews-section";
 import {
   divider,
@@ -86,7 +89,20 @@ const ListingDetailView = () => {
   const locationLabel = [listing.neighbourhood?.name, listing.city.name]
     .filter(Boolean)
     .join(", ");
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${listing.latitude},${listing.longitude}`;
+  const listingForCompare: SearchListingItem = {
+    id: listing.id,
+    name: listing.name,
+    photos: listing.photos,
+    propertyType: listing.propertyType,
+    roomType: listing.roomType,
+    pricePerNight: listing.price ?? 0,
+    totalForStay: listing.price ?? 0,
+    rating: listing.ratingAvg,
+    reviewCount: listing.reviewCount,
+    amenities: listing.amenities,
+    latitude: listing.latitude,
+    longitude: listing.longitude,
+  };
 
   const stats = [
     { label: "guests", value: listing.accommodates },
@@ -106,11 +122,18 @@ const ListingDetailView = () => {
           <ChevronLeftIcon className="text-[15px]" />
           Back
         </button>
-        <WishlistButton
-          listingId={listing.id}
-          listingName={listing.name}
-          variant="surface"
-        />
+        <div className="flex items-center gap-1">
+          <CompareAddButton
+            listing={listingForCompare}
+            className="relative! bg-white/80! shadow-[0_1px_4px_rgba(0,0,0,0.06)]! ring-1! ring-black/6!"
+          />
+          <WishlistButton
+            listingId={listing.id}
+            listingName={listing.name}
+            variant="surface"
+            className="relative!"
+          />
+        </div>
       </div>
 
       <HeroGallery photos={listing.photos} />
@@ -222,17 +245,11 @@ const ListingDetailView = () => {
             <p className={sectionEyebrow}>Neighbourhood</p>
             <h2 className={cn(sectionTitle, "mb-1")}>Location</h2>
             <p className="mb-4 text-[13px] text-black/50">{locationLabel}</p>
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex aspect-21/9 items-center justify-center rounded-2xl bg-linear-to-br from-black/3 to-black/6 ring-1 ring-black/6 transition-all hover:ring-main/25"
-            >
-              <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-black/55 transition-colors group-hover:text-main">
-                <LocationIcon className="text-base" />
-                Open in Google Maps
-              </span>
-            </a>
+            <DetailLocationMap
+              latitude={listing.latitude}
+              longitude={listing.longitude}
+              label={locationLabel}
+            />
           </section>
 
           <ReviewsSection />

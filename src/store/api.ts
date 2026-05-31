@@ -5,5 +5,6 @@ export const api = createApi({
   reducerPath: "flatgigsApi",
   baseQuery: baseQueryWithApiResponse,
   tagTypes: ["Listings", "ListingReviews", "Search", "Wishlist"],
+  keepUnusedDataFor: 900,
   endpoints: () => ({}),
 });

@@ -10,7 +10,7 @@ export const useWishlist = (listingId: string) => {
   const [addToWishlist, addState] = useAddToWishlistMutation();
   const [removeFromWishlist, removeState] = useRemoveFromWishlistMutation();
 
-  const isSaved = data?.listingIds.includes(listingId) ?? false;
+  const isSaved = data?.items.some((item) => item.id === listingId) ?? false;
   const isBusy = addState.isLoading || removeState.isLoading;
 
   const toggle = useCallback(

@@ -78,8 +78,12 @@ const BookingSearchForm = () => {
         label="GUESTS"
         icon="users"
         render="guests"
-        guestCount={searchInputs.adults}
-        onGuestCountChange={(adults) => setSearchInput({ adults })}
+        guestAdults={searchInputs.adults}
+        guestChildren={searchInputs.children ?? 0}
+        guestRooms={searchInputs.rooms ?? 1}
+        onGuestBreakdownChange={({ adults, children, rooms }) =>
+          setSearchInput({ adults, children, rooms })
+        }
       />
       <Button
         type="button"

@@ -1,11 +1,14 @@
+import CompareAddButton from "@/components/molecules/compare-add-button";
 import WishlistButton from "@/components/molecules/wishlist-button";
 import { useGetTopPicksQuery } from "@/store/services/listings-api";
+import type { SearchListingItem } from "@/store/types/search";
 import { useIcon } from "@/hooks/use-icons";
 import cn from "@/utils/cn";
 import CustomTooltip from "@/components/atoms/custom-tooltip";
 import { IconButton, Skeleton } from "@mui/material";
 import { motion } from "motion/react";
 import { useCallback, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FreeMode, Mousewheel } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperInstance } from "swiper";
@@ -17,7 +20,32 @@ const SKELETON_COUNT = 10;
 const slideClassName =
   "relative aspect-4/5! w-60! overflow-hidden! rounded-2xl";
 
+const pickToListing = (pick: {
+  id: string;
+  name: string;
+  photo: string;
+  propertyType: string;
+  roomType: string;
+  pricePerNight: number;
+  rating: number;
+  reviewCount: number;
+}): SearchListingItem => ({
+  id: pick.id,
+  name: pick.name,
+  photos: [pick.photo],
+  propertyType: pick.propertyType,
+  roomType: pick.roomType,
+  pricePerNight: pick.pricePerNight,
+  totalForStay: pick.pricePerNight,
+  rating: pick.rating,
+  reviewCount: pick.reviewCount,
+  amenities: [],
+  latitude: 0,
+  longitude: 0,
+});
+
 const TopPicks = () => {
+  const navigate = useNavigate();
   const { data, isLoading, isError } = useGetTopPicksQuery(undefined, {
     refetchOnMountOrArgChange: true,
   });
@@ -105,6 +133,15 @@ const TopPicks = () => {
                   className="group relative size-full overflow-hidden"
                   initial="rest"
                   whileHover="hover"
+                  role="link"
+                  tabIndex={0}
+                  onClick={() => navigate(`/results/${pick.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      navigate(`/results/${pick.id}`);
+                    }
+                  }}
                 >
                   <RenderImage url={pick.photo} className="size-full origin-center object-cover will-change-transform hover:scale-105 transition-transform duration-300 ease-out" />
                   <div
@@ -114,7 +151,11 @@ const TopPicks = () => {
                       "opacity-80 transition-opacity duration-500 ease-out group-hover:opacity-100",
                     )}
                   >
-                    <div className="flex w-full items-center justify-end pointer-events-auto">
+                    <div className="flex w-full items-center justify-end gap-1 pointer-events-auto">
+                      <CompareAddButton
+                        listing={pickToListing(pick)}
+                        className="bg-black/20!"
+                      />
                       <WishlistButton
                         listingId={pick.id}
                         listingName={pick.name}

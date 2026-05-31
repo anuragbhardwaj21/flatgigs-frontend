@@ -151,9 +151,9 @@ export const FiltersSkeleton = () => (
     </div>
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex flex-wrap gap-2">
-        {[88, 120, 168, 168].map((width) => (
+        {[88, 120, 168, 180].map((width, index) => (
           <Skeleton
-            key={width}
+            key={`filter-chip-skeleton-${index}`}
             variant="rounded"
             animation="wave"
             width={width}

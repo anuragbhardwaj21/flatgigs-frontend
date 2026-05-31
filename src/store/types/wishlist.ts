@@ -1,5 +1,12 @@
+import type { ListingDetail } from "./listings";
+
+export type WishlistListing = ListingDetail & {
+  savedAt: string;
+};
+
 export type WishlistData = {
-  listingIds: string[];
+  items: WishlistListing[];
+  total: number;
 };
 
 export type AddWishlistResponse = {
