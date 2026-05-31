@@ -97,7 +97,7 @@ const ListsView = ({ variant = "full" }: ListsViewProps) => {
             ref={listRef}
             className={listClassName}
             variants={listStagger}
-            initial="hidden"
+            initial={false}
             animate="visible"
           >
             {items.map((listing) => (

@@ -9,6 +9,7 @@
 
 .maplibregl-marker {
   z-index: 1;
+  pointer-events: auto;
 }
 
 .maplibregl-marker:hover {
@@ -18,3 +19,4 @@
 .price-marker {
   transform: translate(-50%, -100%);
 }
+

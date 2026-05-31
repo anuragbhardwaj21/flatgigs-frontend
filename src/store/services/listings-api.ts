@@ -65,6 +65,7 @@ export const listingsApi = api.injectEndpoints({
 export const {
   useGetTopPicksQuery,
   useGetListingByIdQuery,
+  useLazyGetListingByIdQuery,
   useGetListingCalendarQuery,
   useGetListingPriceQuoteQuery,
   useGetListingReviewsQuery,

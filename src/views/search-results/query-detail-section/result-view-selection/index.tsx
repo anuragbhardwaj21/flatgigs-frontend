@@ -1,4 +1,5 @@
 import CustomTabs from "@/components/molecules/custom-tabs";
+import { useMapResults } from "@/context/map-results";
 import { useSearch } from "@/context/search";
 import type { SearchViewType } from "@/context/search";
 import { useDayjs } from "@/hooks/use-dayjs";
@@ -24,12 +25,35 @@ const ResultViewSelection = () => {
   const dayjs = useDayjs();
   const { searchData, searchInputs, viewType, setViewType, setSearchInput, refreshSearch } =
     useSearch();
+  const { setMapExpanded, setMobileListOpen } = useMapResults();
   const total = searchData?.total ?? 0;
 
   const cityTab = useMemo(() => toCityTab(searchInputs.city), [searchInputs.city]);
   const cityLabel = formatCityLabel(searchInputs.city);
   const dateRange = `${dayjs(searchInputs.checkIn).format(DATE_DISPLAY_FORMAT)} — ${dayjs(searchInputs.checkOut).format(DATE_DISPLAY_FORMAT)}`;
   const stayLabel = total === 1 ? "stay" : "stays";
+
+  const handleViewTypeChange = useCallback(
+    (next: string) => {
+      const nextView = next as SearchViewType;
+      setViewType(nextView);
+      setMapExpanded(false);
+      setMobileListOpen(false);
+      if (nextView === "list" && searchInputs.bounds) {
+        const patch = { bounds: undefined, page: 1 };
+        setSearchInput(patch);
+        refreshSearch(patch);
+      }
+    },
+    [
+      refreshSearch,
+      searchInputs.bounds,
+      setMapExpanded,
+      setMobileListOpen,
+      setSearchInput,
+      setViewType,
+    ],
+  );
 
   const handleCityTabChange = useCallback(
     (tab: string) => {
@@ -69,11 +93,7 @@ const ResultViewSelection = () => {
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <CustomTabs
-          value={viewType}
-          onValueChange={(next) => setViewType(next as SearchViewType)}
-          width={200}
-        >
+        <CustomTabs value={viewType} onValueChange={handleViewTypeChange} width={200}>
           <CustomTabs.Tab
             value="list"
             startIcon={<GridIcon className="text-base" />}

@@ -1,6 +1,7 @@
 import { useMapResults } from "@/context/map-results";
 import { useSearch } from "@/context/search";
 import { useIcon } from "@/hooks/use-icons";
+import { useLazyGetListingByIdQuery } from "@/store/services/listings-api";
 import cn from "@/utils/cn";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Marker, NavigationControl } from "react-map-gl/maplibre";
@@ -8,6 +9,9 @@ import type { MapRef, ViewStateChangeEvent } from "react-map-gl/maplibre";
 import { useNavigate } from "react-router-dom";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./map-styles.css";
+import { resolveHoverCard } from "./map-hover-card";
+import MapPinCard from "./map-pin-card";
+import MapPinHoverOverlay from "./map-pin-hover-overlay";
 import {
   encodeMapBounds,
   getDefaultCenter,
@@ -22,6 +26,7 @@ const MAP_STYLE =
   "https://tiles.openfreemap.org/styles/liberty";
 
 const BOUNDS_DEBOUNCE_MS = 600;
+const HOVER_CLEAR_MS = 220;
 
 type MapViewProps = {
   className?: string;
@@ -31,9 +36,11 @@ const MapView = ({ className }: MapViewProps) => {
   const navigate = useNavigate();
   const mapRef = useRef<MapRef>(null);
   const boundsTimerRef = useRef<number | null>(null);
+  const hoverClearTimerRef = useRef<number | null>(null);
   const skipBoundsSearchRef = useRef(true);
 
-  const { searchData, searchInputs, refreshMapBounds } = useSearch();
+  const { searchData, searchInputs, refreshMapBounds, refreshSearch, setSearchInput } =
+    useSearch();
   const {
     hoveredListingId,
     setHoveredListingId,
@@ -43,6 +50,9 @@ const MapView = ({ className }: MapViewProps) => {
     setMobileListOpen,
   } = useMapResults();
 
+  const [fetchListingDetail, { data: listingDetail, isFetching: isDetailLoading }] =
+    useLazyGetListingByIdQuery();
+
   const GridIcon = useIcon("grid");
   const MapIcon = useIcon("map");
 
@@ -51,6 +61,24 @@ const MapView = ({ className }: MapViewProps) => {
     () => getDefaultCenter(searchInputs.city, pins),
     [searchInputs.city, pins],
   );
+
+  const hoveredPin = useMemo(
+    () => pins.find((pin) => pin.id === hoveredListingId) ?? null,
+    [pins, hoveredListingId],
+  );
+
+  const hoverCard = useMemo(
+    () => resolveHoverCard(hoveredListingId, searchData, listingDetail),
+    [hoveredListingId, searchData, listingDetail],
+  );
+
+  const needsDetailFetch = useMemo(() => {
+    if (!hoveredListingId || !searchData) return false;
+    const inItems = searchData.items.some((item) => item.id === hoveredListingId);
+    const hasPhoto =
+      listingDetail?.id === hoveredListingId && listingDetail.photos.length > 0;
+    return !inItems && !hasPhoto;
+  }, [hoveredListingId, listingDetail, searchData]);
 
   const [viewState, setViewState] = useState({
     longitude: defaultCenter[0],
@@ -62,6 +90,51 @@ const MapView = ({ className }: MapViewProps) => {
     pins,
     viewState.zoom,
   );
+
+  const cancelHoverClear = useCallback(() => {
+    if (hoverClearTimerRef.current) {
+      window.clearTimeout(hoverClearTimerRef.current);
+      hoverClearTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleHoverClear = useCallback(() => {
+    cancelHoverClear();
+    hoverClearTimerRef.current = window.setTimeout(() => {
+      setHoveredListingId(null);
+    }, HOVER_CLEAR_MS);
+  }, [cancelHoverClear, setHoveredListingId]);
+
+  const setHoveredPin = useCallback(
+    (id: string) => {
+      cancelHoverClear();
+      setHoveredListingId(id);
+    },
+    [cancelHoverClear, setHoveredListingId],
+  );
+
+  useEffect(() => {
+    if (!hoveredListingId || !needsDetailFetch) return;
+    void fetchListingDetail(hoveredListingId, true);
+  }, [fetchListingDetail, hoveredListingId, needsDetailFetch]);
+
+  const restoreCityResults = useCallback(() => {
+    if (!searchInputs.bounds) return;
+    const patch = { bounds: undefined, page: 1 };
+    setSearchInput(patch);
+    refreshSearch(patch);
+  }, [refreshSearch, searchInputs.bounds, setSearchInput]);
+
+  const handleToggleMapExpanded = useCallback(() => {
+    const next = !mapExpanded;
+    setMapExpanded(next);
+    if (!next) restoreCityResults();
+  }, [mapExpanded, restoreCityResults, setMapExpanded]);
+
+  const handleShowMobileList = useCallback(() => {
+    setMobileListOpen(!mobileListOpen);
+    if (!mobileListOpen) restoreCityResults();
+  }, [mobileListOpen, restoreCityResults, setMobileListOpen]);
 
   useEffect(() => {
     if (pins.length === 0) return;
@@ -93,6 +166,8 @@ const MapView = ({ className }: MapViewProps) => {
   }, [hoveredListingId, pins]);
 
   const scheduleBoundsSearch = useCallback(() => {
+    if (mapExpanded) return;
+
     const map = mapRef.current?.getMap();
     if (!map) return;
 
@@ -107,11 +182,12 @@ const MapView = ({ className }: MapViewProps) => {
       }
       refreshMapBounds(encodeMapBounds(map.getBounds()));
     }, BOUNDS_DEBOUNCE_MS);
-  }, [refreshMapBounds]);
+  }, [mapExpanded, refreshMapBounds]);
 
   useEffect(
     () => () => {
       if (boundsTimerRef.current) window.clearTimeout(boundsTimerRef.current);
+      if (hoverClearTimerRef.current) window.clearTimeout(hoverClearTimerRef.current);
     },
     [],
   );
@@ -140,14 +216,10 @@ const MapView = ({ className }: MapViewProps) => {
     [navigate],
   );
 
+  const showHoverCard = Boolean(hoveredPin && hoverCard);
+
   return (
-    <div
-      className={cn(
-        "relative min-h-[420px] overflow-hidden rounded-[1.25rem] ring-1 ring-black/8",
-        "h-[calc(100dvh-220px)] lg:min-h-[520px]",
-        className,
-      )}
-    >
+    <div className={cn("relative overflow-hidden", className)}>
       <Map
         ref={mapRef}
         {...viewState}
@@ -179,24 +251,38 @@ const MapView = ({ className }: MapViewProps) => {
               longitude={item.lng}
               latitude={item.lat}
               anchor="bottom"
+              style={{ zIndex: hoveredListingId === item.id ? 20 : 1 }}
             >
               <PriceMarker
                 price={item.pricePerNight}
                 active={hoveredListingId === item.id}
                 onClick={() => handlePinClick(item.id)}
-                onMouseEnter={() => setHoveredListingId(item.id)}
-                onMouseLeave={() => setHoveredListingId(null)}
+                onMouseEnter={() => setHoveredPin(item.id)}
+                onMouseLeave={scheduleHoverClear}
               />
             </Marker>
           ),
         )}
       </Map>
 
-      <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-end gap-2 px-3">
+      <MapPinHoverOverlay
+        mapRef={mapRef}
+        open={showHoverCard}
+        longitude={hoveredPin?.lng}
+        latitude={hoveredPin?.lat}
+        onEnter={cancelHoverClear}
+        onLeave={scheduleHoverClear}
+      >
+        {hoverCard ? (
+          <MapPinCard card={hoverCard} loading={isDetailLoading && needsDetailFetch} />
+        ) : null}
+      </MapPinHoverOverlay>
+
+      <div className="pointer-events-none absolute inset-x-0 top-3 z-50 flex justify-end gap-2 px-3">
         <div className="pointer-events-auto flex gap-2">
           <button
             type="button"
-            onClick={() => setMapExpanded(!mapExpanded)}
+            onClick={handleToggleMapExpanded}
             className="hidden items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-black/70 shadow-md ring-1 ring-black/8 backdrop-blur-sm transition hover:text-black/90 lg:inline-flex"
           >
             <MapIcon className="text-sm" />
@@ -204,7 +290,7 @@ const MapView = ({ className }: MapViewProps) => {
           </button>
           <button
             type="button"
-            onClick={() => setMobileListOpen(!mobileListOpen)}
+            onClick={handleShowMobileList}
             className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-black/70 shadow-md ring-1 ring-black/8 backdrop-blur-sm transition hover:text-black/90 lg:hidden"
           >
             <GridIcon className="text-sm" />

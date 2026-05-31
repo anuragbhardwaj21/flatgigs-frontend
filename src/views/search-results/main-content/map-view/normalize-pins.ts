@@ -75,10 +75,20 @@ export const listingById = (
   items: SearchListingItem[],
 ): Map<string, SearchListingItem> => new Map(items.map((item) => [item.id, item]));
 
+/** API format: `neLat,neLng,swLat,swLng` (not GeoJSON west,south,east,north). */
+export const geoJsonBboxToBounds = (
+  west: number,
+  south: number,
+  east: number,
+  north: number,
+): string => `${north},${east},${south},${west}`;
+
+/** MapLibre / Mapbox `LngLatBounds` → search API `bounds` param. */
 export const encodeMapBounds = (bounds: {
-  getWest: () => number;
-  getSouth: () => number;
-  getEast: () => number;
-  getNorth: () => number;
-}) =>
-  `${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`;
+  getNorthEast: () => { lat: number; lng: number };
+  getSouthWest: () => { lat: number; lng: number };
+}) => {
+  const ne = bounds.getNorthEast();
+  const sw = bounds.getSouthWest();
+  return geoJsonBboxToBounds(sw.lng, sw.lat, ne.lng, ne.lat);
+};

@@ -71,6 +71,25 @@ const SearchLoadingOverlay = ({ show, mapLayout }: SearchLoadingOverlayProps) =>
   );
 };
 
+const listPanelClass = (mapExpanded: boolean, mobileListOpen: boolean) =>
+  cn(
+    "min-h-0 shrink-0 overflow-hidden transition-[width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+    "max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-30 max-lg:rounded-t-2xl max-lg:bg-background-paper max-lg:shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
+    mobileListOpen
+      ? "max-lg:top-[38%] max-lg:block max-lg:w-full"
+      : "max-lg:pointer-events-none max-lg:hidden max-lg:w-full",
+    mapExpanded
+      ? "lg:w-0 lg:min-w-0 lg:opacity-0 lg:pointer-events-none"
+      : "lg:w-1/2 lg:opacity-100 lg:overflow-y-auto lg:pr-1",
+  );
+
+const mapPanelClass = (mapExpanded: boolean) =>
+  cn(
+    "transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+    mapExpanded ? "lg:w-full" : "lg:w-1/2 lg:shrink-0 lg:sticky lg:top-24 lg:self-start",
+    "max-lg:fixed max-lg:inset-x-0 max-lg:top-[220px] max-lg:z-20 max-lg:h-[calc(100dvh-220px)] max-lg:rounded-none max-lg:ring-0 max-lg:w-full",
+  );
+
 const MainContent = () => {
   const { viewType, isSearching, isLoadingMore, searchData } = useSearch();
   const { mapExpanded, mobileListOpen } = useMapResults();
@@ -89,26 +108,16 @@ const MainContent = () => {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row lg:gap-4">
-      {!mapExpanded && (
-        <div
-          className={cn(
-            "min-h-0 shrink-0 overflow-hidden",
-            "max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-30 max-lg:rounded-t-2xl max-lg:bg-background-paper max-lg:shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
-            mobileListOpen
-              ? "max-lg:top-[38%] max-lg:block"
-              : "max-lg:pointer-events-none max-lg:hidden",
-            "lg:block lg:w-[42%] lg:overflow-y-auto lg:pr-1",
-          )}
-        >
-          <ListsView variant="split" />
-        </div>
-      )}
+      <div className={listPanelClass(mapExpanded, mobileListOpen)}>
+        <ListsView variant="split" />
+      </div>
 
       <Suspense fallback={<MapViewFallback />}>
         <MapView
           className={cn(
-            mapExpanded ? "w-full" : "lg:w-[58%] lg:shrink-0 lg:sticky lg:top-24 lg:self-start",
-            "max-lg:fixed max-lg:inset-x-0 max-lg:top-[220px] max-lg:z-20 max-lg:h-[calc(100dvh-220px)] max-lg:rounded-none max-lg:ring-0",
+            "relative min-h-[420px] overflow-hidden rounded-[1.25rem] ring-1 ring-black/8",
+            "h-[calc(100dvh-220px)] lg:min-h-[520px]",
+            mapPanelClass(mapExpanded),
           )}
         />
       </Suspense>
