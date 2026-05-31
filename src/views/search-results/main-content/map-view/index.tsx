@@ -12,21 +12,17 @@ import "./map-styles.css";
 import { resolveHoverCard } from "./map-hover-card";
 import MapPinCard from "./map-pin-card";
 import MapPinHoverOverlay from "./map-pin-hover-overlay";
-import {
-  encodeMapBounds,
-  getDefaultCenter,
-  getPinsBounds,
-  normalizeMapPins,
-} from "./normalize-pins";
+import { getDefaultCenter, getPinsBounds, normalizeMapPins } from "./normalize-pins";
 import PriceMarker from "./price-marker";
+import { useMapBoundsSearch } from "./use-map-bounds-search";
 import { useMapClusters } from "./use-map-clusters";
 
 const MAP_STYLE =
   import.meta.env.VITE_MAP_STYLE_URL ??
   "https://tiles.openfreemap.org/styles/liberty";
 
-const BOUNDS_DEBOUNCE_MS = 600;
 const HOVER_CLEAR_MS = 220;
+const CLUSTER_ZOOM_EPSILON = 0.35;
 
 type MapViewProps = {
   className?: string;
@@ -35,9 +31,9 @@ type MapViewProps = {
 const MapView = ({ className }: MapViewProps) => {
   const navigate = useNavigate();
   const mapRef = useRef<MapRef>(null);
-  const boundsTimerRef = useRef<number | null>(null);
   const hoverClearTimerRef = useRef<number | null>(null);
-  const skipBoundsSearchRef = useRef(true);
+  const lastFittedCityRef = useRef<string | null>(null);
+  const clusterZoomRef = useRef(12);
 
   const { searchData, searchInputs, refreshMapBounds, refreshSearch, setSearchInput } =
     useSearch();
@@ -62,6 +58,27 @@ const MapView = ({ className }: MapViewProps) => {
     [searchInputs.city, pins],
   );
 
+  const initialViewState = useMemo(
+    () => ({
+      longitude: defaultCenter[0],
+      latitude: defaultCenter[1],
+      zoom: 12,
+      bearing: 0,
+      pitch: 0,
+      padding: { top: 0, bottom: 0, left: 0, right: 0 },
+    }),
+    [defaultCenter],
+  );
+
+  const [clusterZoom, setClusterZoom] = useState(12);
+
+  const { scheduleBoundsSearch, skipNextBoundsSearch } = useMapBoundsSearch({
+    mapRef,
+    mapExpanded,
+    enabled: true,
+    refreshMapBounds,
+  });
+
   const hoveredPin = useMemo(
     () => pins.find((pin) => pin.id === hoveredListingId) ?? null,
     [pins, hoveredListingId],
@@ -80,16 +97,19 @@ const MapView = ({ className }: MapViewProps) => {
     return !inItems && !hasPhoto;
   }, [hoveredListingId, listingDetail, searchData]);
 
-  const [viewState, setViewState] = useState({
-    longitude: defaultCenter[0],
-    latitude: defaultCenter[1],
-    zoom: 12,
-  });
-
   const { items: clusterItems, index: clusterIndex } = useMapClusters(
     pins,
-    viewState.zoom,
+    clusterZoom,
   );
+
+  const syncClusterZoom = useCallback(() => {
+    const zoom = mapRef.current?.getZoom();
+    if (zoom == null) return;
+    const floored = Math.floor(zoom);
+    if (Math.abs(zoom - clusterZoomRef.current) < CLUSTER_ZOOM_EPSILON) return;
+    clusterZoomRef.current = zoom;
+    setClusterZoom(floored);
+  }, []);
 
   const cancelHoverClear = useCallback(() => {
     if (hoverClearTimerRef.current) {
@@ -137,13 +157,39 @@ const MapView = ({ className }: MapViewProps) => {
   }, [mobileListOpen, restoreCityResults, setMobileListOpen]);
 
   useEffect(() => {
-    if (pins.length === 0) return;
+    const city = searchInputs.city.trim().toLowerCase();
+    if (pins.length === 0 || searchInputs.bounds) return;
+    if (lastFittedCityRef.current === city) return;
+
     const bounds = getPinsBounds(pins);
     if (!bounds) return;
 
-    skipBoundsSearchRef.current = true;
+    lastFittedCityRef.current = city;
+    skipNextBoundsSearch();
     mapRef.current?.fitBounds(bounds, { padding: 60, duration: 800 });
-  }, [searchInputs.city, pins.length]);
+  }, [
+    pins,
+    searchInputs.bounds,
+    searchInputs.city,
+    skipNextBoundsSearch,
+  ]);
+
+  useEffect(() => {
+    if (!searchInputs.bounds) return;
+    lastFittedCityRef.current = null;
+  }, [searchInputs.bounds]);
+
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+    skipNextBoundsSearch();
+    map.flyTo({
+      center: defaultCenter,
+      zoom: 12,
+      duration: 600,
+    });
+    lastFittedCityRef.current = null;
+  }, [searchInputs.city, defaultCenter, skipNextBoundsSearch]);
 
   useEffect(() => {
     if (!hoveredListingId) return;
@@ -161,52 +207,38 @@ const MapView = ({ className }: MapViewProps) => {
       pin.lat <= bounds.getNorth();
 
     if (!inView) {
+      skipNextBoundsSearch();
       map.easeTo({ center: [pin.lng, pin.lat], duration: 400 });
     }
-  }, [hoveredListingId, pins]);
-
-  const scheduleBoundsSearch = useCallback(() => {
-    if (mapExpanded) return;
-
-    const map = mapRef.current?.getMap();
-    if (!map) return;
-
-    if (boundsTimerRef.current) {
-      window.clearTimeout(boundsTimerRef.current);
-    }
-
-    boundsTimerRef.current = window.setTimeout(() => {
-      if (skipBoundsSearchRef.current) {
-        skipBoundsSearchRef.current = false;
-        return;
-      }
-      refreshMapBounds(encodeMapBounds(map.getBounds()));
-    }, BOUNDS_DEBOUNCE_MS);
-  }, [mapExpanded, refreshMapBounds]);
+  }, [hoveredListingId, pins, skipNextBoundsSearch]);
 
   useEffect(
     () => () => {
-      if (boundsTimerRef.current) window.clearTimeout(boundsTimerRef.current);
       if (hoverClearTimerRef.current) window.clearTimeout(hoverClearTimerRef.current);
     },
     [],
   );
 
-  const handleMove = useCallback((event: ViewStateChangeEvent) => {
-    setViewState(event.viewState);
-  }, []);
+  const handleMove = useCallback(
+    (_event: ViewStateChangeEvent) => {
+      syncClusterZoom();
+    },
+    [syncClusterZoom],
+  );
 
   const handleMoveEnd = useCallback(() => {
+    syncClusterZoom();
     scheduleBoundsSearch();
-  }, [scheduleBoundsSearch]);
+  }, [scheduleBoundsSearch, syncClusterZoom]);
 
   const handleClusterClick = useCallback(
     (clusterId: number, lat: number, lng: number) => {
       if (!clusterIndex) return;
       const zoom = clusterIndex.getClusterExpansionZoom(clusterId);
+      skipNextBoundsSearch();
       mapRef.current?.easeTo({ center: [lng, lat], zoom, duration: 500 });
     },
-    [clusterIndex],
+    [clusterIndex, skipNextBoundsSearch],
   );
 
   const handlePinClick = useCallback(
@@ -222,7 +254,7 @@ const MapView = ({ className }: MapViewProps) => {
     <div className={cn("relative overflow-hidden", className)}>
       <Map
         ref={mapRef}
-        {...viewState}
+        initialViewState={initialViewState}
         onMove={handleMove}
         onMoveEnd={handleMoveEnd}
         mapStyle={MAP_STYLE}

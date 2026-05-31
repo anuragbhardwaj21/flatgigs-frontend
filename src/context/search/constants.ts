@@ -5,3 +5,5 @@ export const SEARCH_PRICE_MAX = 500;
 export const DEFAULT_SEARCH_SORT: SearchSort = "popularity";
 export const SEARCH_PAGE_LIMIT = 20;
 export const DEFAULT_VIEW_TYPE: SearchViewType = "list";
+/** Debounce before firing bounds search after pan/zoom ends. */
+export const MAP_BOUNDS_DEBOUNCE_MS = 900;

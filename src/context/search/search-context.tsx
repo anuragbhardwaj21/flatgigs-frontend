@@ -1,6 +1,7 @@
 
 import { buildSearchQuery } from "@/context/search/build-search-query";
 import { DEFAULT_VIEW_TYPE, SEARCH_PAGE_LIMIT } from "@/context/search/constants";
+import { isAbortedSearchError } from "@/context/search/is-aborted-search";
 import type {
   SearchInputPatch,
   SearchInputs,
@@ -80,13 +81,24 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const hasRestoredResultsRef = useRef(false);
+  const activeSearchRef = useRef<ReturnType<typeof triggerSearch> | null>(null);
+  const searchGenerationRef = useRef(0);
+
+  const cancelActiveSearch = useCallback(() => {
+    activeSearchRef.current?.abort();
+    activeSearchRef.current = null;
+  }, []);
 
   const runSearch = useCallback(
     async (
       values: SearchInputs,
-      options?: { navigate?: boolean; append?: boolean; page?: number },
+      options?: {
+        navigate?: boolean;
+        append?: boolean;
+        page?: number;
+        preferCache?: boolean;
+      },
     ) => {
-      setSearchError(null);
       const page = options?.page ?? values.page ?? 1;
       const queryValues = {
         ...values,
@@ -96,8 +108,17 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
       const query = buildSearchQuery(queryValues);
       if (!query) return false;
 
+      cancelActiveSearch();
+      const generation = ++searchGenerationRef.current;
+      setSearchError(null);
+
+      const request = triggerSearch(query, options?.preferCache ?? true);
+      activeSearchRef.current = request;
+
       try {
-        const result = await triggerSearch(query, true).unwrap();
+        const result = await request.unwrap();
+        if (generation !== searchGenerationRef.current) return false;
+
         setSearchSource("form");
         setSearchData((prev) =>
           options?.append ? mergeSearchPages(prev, result, page) : result,
@@ -105,14 +126,19 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
         persistSearchInputs(queryValues);
         if (options?.navigate) navigate(RESULTS_PATH);
         return true;
-      } catch {
+      } catch (error) {
+        if (generation !== searchGenerationRef.current) return false;
+        if (isAbortedSearchError(error)) return false;
         setSearchError("Search failed. Please try again.");
         return false;
       } finally {
+        if (activeSearchRef.current === request) {
+          activeSearchRef.current = null;
+        }
         setIsLoadingMore(false);
       }
     },
-    [navigate, triggerSearch],
+    [cancelActiveSearch, navigate, triggerSearch],
   );
 
   const formik = useFormik<SearchInputs>({
@@ -235,9 +261,14 @@ export const SearchProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshMapBounds = useCallback(
     (bounds: string) => {
-      void runSearch({ ...formik.values, bounds, includeMapPins: true, page: 1 });
+      void formik.setFieldValue("bounds", bounds);
+      void formik.setFieldValue("page", 1);
+      void runSearch(
+        { ...formik.values, bounds, includeMapPins: true, page: 1 },
+        { preferCache: false },
+      );
     },
-    [formik.values, runSearch],
+    [formik, runSearch],
   );
 
   const viewType = formik.values.viewType ?? DEFAULT_VIEW_TYPE;
