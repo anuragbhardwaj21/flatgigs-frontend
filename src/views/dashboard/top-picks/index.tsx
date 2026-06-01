@@ -136,7 +136,7 @@ const TopPicks = () => {
                 />
               </SwiperSlide>
             ))
-          : topPicks.map((pick, index) => (
+          : topPicks.map((pick) => (
               <SwiperSlide
                 key={pick.id}
                 className={cn(slideClassName, "cursor-pointer!")}
