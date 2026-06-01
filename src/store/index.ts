@@ -15,6 +15,7 @@ import "./services/compare-api";
 import "./services/listings-api";
 import "./services/search-api";
 import "./services/wishlist-api";
+import "./services/traces-api";
 
 const rootReducer = combineReducers({
   [api.reducerPath]: api.reducer,

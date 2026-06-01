@@ -20,16 +20,23 @@ const resolveContent = (raw: RawChatMessage): string =>
   raw.text?.trim() ||
   "";
 
+const resolveKind = (kind?: string): ChatMessage["kind"] => {
+  if (kind === "results") return "results";
+  if (kind === "trace-recorded") return "trace-recorded";
+  return "text";
+};
+
 export const normalizeChatMessage = (raw: RawChatMessage, index: number): ChatMessage | null => {
+  const kind = resolveKind(raw.kind);
   const content = resolveContent(raw);
-  if (!content) return null;
+  if (!content && kind !== "trace-recorded") return null;
 
   return {
-    id: raw.id ?? `msg-${index}-${content.slice(0, 12)}`,
+    id: raw.id ?? `msg-${index}-${content.slice(0, 12) || kind}`,
     role: resolveRole(raw.role),
     content,
     createdAt: raw.createdAt ?? new Date(0).toISOString(),
-    kind: raw.kind === "results" ? "results" : "text",
+    kind,
     messageType: raw.messageType,
   };
 };
@@ -55,4 +62,12 @@ export const createAssistantChatMessage = (
   createdAt: new Date().toISOString(),
   kind,
   messageType: data.messageType,
+});
+
+export const createTraceRecordedChatMessage = (): ChatMessage => ({
+  id: `trace-recorded-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  role: "assistant",
+  content: "",
+  createdAt: new Date().toISOString(),
+  kind: "trace-recorded",
 });

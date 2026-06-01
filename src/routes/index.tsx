@@ -15,6 +15,7 @@ const SearchResults = lazy(() => import("../pages/search-results"));
 const ListingDetail = lazy(() => import("../pages/listing-detail"));
 const ComparePage = lazy(() => import("../pages/compare"));
 const WishlistPage = lazy(() => import("../pages/wishlist"));
+const TracesPage = lazy(() => import("../pages/traces"));
 
 const rootRoutes: RouteObject[] = [
   {
@@ -56,6 +57,10 @@ const rootRoutes: RouteObject[] = [
             <WishlistPage />
           </Suspense>
         ),
+      },
+      {
+        path: "traces",
+        element: <TracesPage />,
       },
       {
         path: "*",

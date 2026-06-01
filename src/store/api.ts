@@ -4,7 +4,9 @@ import { baseQueryWithApiResponse } from "./helper/base-query";
 export const api = createApi({
   reducerPath: "flatgigsApi",
   baseQuery: baseQueryWithApiResponse,
-  tagTypes: ["Listings", "ListingReviews", "Search", "Wishlist"],
+  refetchOnFocus: false,
+  refetchOnReconnect: false,
+  tagTypes: ["Listings", "ListingReviews", "Search", "Wishlist", "Traces"],
   keepUnusedDataFor: 900,
   endpoints: () => ({}),
 });

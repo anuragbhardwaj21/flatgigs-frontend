@@ -1,7 +1,9 @@
 import { buildSearchQueryFromSlots, slotsAreSearchable } from "@/context/chat/build-search-query-from-slots";
+import { persistChatTrace } from "@/context/chat/persist-traces";
 import { normalizeAssistantResults } from "@/context/chat/normalize-chat-search";
 import {
   createAssistantChatMessage,
+  createTraceRecordedChatMessage,
   normalizeChatMessages,
 } from "@/context/chat/normalize-chat-messages";
 import { useSearch } from "@/context/search/search-context";
@@ -177,6 +179,15 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     [refetchListingCards],
   );
 
+  const appendChatMessage = useCallback((next: ChatMessage) => {
+    setMessages((current) => {
+      if (current.some((message) => message.id === next.id)) return current;
+      return [...current, next].sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+    });
+  }, []);
+
   const appendAssistantMessage = useCallback(
     (data: AssistantMessageData, options?: { animate?: boolean; citations?: ChatCitation[]; resultsTotal?: number }) => {
       optimisticRef.current = [];
@@ -187,15 +198,15 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         next.kind = "results";
         next.resultsTotal = options.resultsTotal;
       }
-      setMessages((current) => {
-        if (current.some((message) => message.id === next.id)) return current;
-        return [...current, next].sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-        );
-      });
+      appendChatMessage(next);
     },
-    [],
+    [appendChatMessage],
   );
+
+  const appendTraceRecordedMessage = useCallback(() => {
+    optimisticRef.current = [];
+    appendChatMessage(createTraceRecordedChatMessage());
+  }, [appendChatMessage]);
 
   const clearTimeline = useCallback(() => {
     setAgentTimeline([]);
@@ -293,12 +304,25 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
           optimisticRef.current = [];
           resultsAppliedRef.current = true;
 
+          const requestId =
+            frame.envelope.meta?.requestId ??
+            (typeof data.meta?.requestId === "string" ? data.meta.requestId : undefined);
+          if (requestId) {
+            persistChatTrace({
+              requestId,
+              message: data.message?.trim() ?? "",
+              createdAt: new Date().toISOString(),
+            });
+          }
+
           if (data.message?.trim()) {
             appendAssistantMessage({
               message: data.message.trim(),
               messageType: "transition",
             });
           }
+
+          appendTraceRecordedMessage();
 
           hydrateSearch({
             data: normalizeAssistantResults(data),
@@ -389,6 +413,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     },
     [
       appendAssistantMessage,
+      appendTraceRecordedMessage,
       hydrateSearch,
       applyHistory,
       navigate,

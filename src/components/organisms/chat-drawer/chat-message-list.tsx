@@ -3,6 +3,7 @@ import Spinner from "@/components/atoms/spinner";
 import AssistantMessageBubble, {
   AssistantAvatar,
 } from "@/components/organisms/chat-drawer/assistant-message-bubble";
+import ChatTraceRecordedDivider from "@/components/organisms/chat-drawer/chat-trace-recorded-divider";
 import type { ChatMessage, ChatStatus } from "@/store/types/chat";
 import cn from "@/utils/cn";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -24,7 +25,7 @@ const TypingIndicator = () => (
     <AssistantAvatar />
     <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-main/15 bg-main/5 px-4 py-3">
       <Spinner  className="bg-main/70"/>
-      <span className="text-xs text-black/50">Connecting...</span>
+      <span className="text-xs text-black/50">Concierge is working…</span>
     </div>
   </motion.div>
 );
@@ -92,6 +93,28 @@ const ChatMessageList = ({
           <AnimatePresence initial={false}>
             {messages.map((message, index) => {
               const isUser = message.role === "user";
+              const isTraceRecorded = message.kind === "trace-recorded";
+
+              if (isTraceRecorded) {
+                return (
+                  <motion.li
+                    key={message.id}
+                    layout={!reduceMotion}
+                    initial={reduceMotion ? false : "hidden"}
+                    animate={reduceMotion ? undefined : "visible"}
+                    variants={reduceMotion ? undefined : messageVariants}
+                    transition={{
+                      duration: 0.32,
+                      ease: [0.22, 1, 0.36, 1],
+                      delay: reduceMotion ? 0 : Math.min(index * 0.04, 0.2),
+                    }}
+                    className="w-full"
+                  >
+                    <ChatTraceRecordedDivider />
+                  </motion.li>
+                );
+              }
+
               return (
                 <motion.li
                   key={message.id}

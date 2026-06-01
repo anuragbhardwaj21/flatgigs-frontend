@@ -4,6 +4,7 @@ export type WsEnvelopeMeta = {
   code: number;
   message: string;
   retryable?: boolean;
+  requestId?: string;
   [key: string]: unknown;
 };
 
@@ -29,6 +30,7 @@ export type ChatServerEvent =
   | "step_completed"
   | "citation"
   | "done"
+  | "pong"
   | "error";
 
 export type AssistantAgent = "concierge" | "retrieval" | "review" | string;
@@ -101,7 +103,7 @@ export type AssistantResultsData = {
 
 export type ChatMessageRole = "user" | "assistant";
 
-export type ChatMessageKind = "text" | "results";
+export type ChatMessageKind = "text" | "results" | "trace-recorded";
 
 export type ChatCitation = {
   listingId: string;

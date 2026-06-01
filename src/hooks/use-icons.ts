@@ -18,6 +18,7 @@ import { GoChevronRight } from "react-icons/go";
 import { VscHeart } from "react-icons/vsc";
 import { VscHeartFilled } from "react-icons/vsc";
 import { FaStar } from "react-icons/fa6";
+import { LuGitGraph } from "react-icons/lu";
 
 export const ICON_REGISTRY = {
   search: CiSearch,
@@ -40,6 +41,7 @@ export const ICON_REGISTRY = {
   star: FaStar,
   plus: FiPlus,
   check: FiCheck,
+  graph: LuGitGraph,
 } as const satisfies Record<string, IconType>;
 
 export type IconName = keyof typeof ICON_REGISTRY;

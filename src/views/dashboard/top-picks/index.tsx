@@ -8,7 +8,7 @@ import CustomTooltip from "@/components/atoms/custom-tooltip";
 import { IconButton, Skeleton } from "@mui/material";
 import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FreeMode, Mousewheel } from "swiper/modules";
+import { FreeMode, Mousewheel,Autoplay} from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperInstance } from "swiper";
 import "swiper/css";
@@ -46,7 +46,7 @@ const pickToListing = (pick: {
 const TopPicks = () => {
   const navigate = useNavigate();
   const { data, isLoading, isError } = useGetTopPicksQuery(undefined, {
-    refetchOnMountOrArgChange: true,
+    refetchOnMountOrArgChange: false,
   });
   const StarsIcon = useIcon("stars");
   const ChevronLeftIcon = useIcon("chevronLeft");
@@ -103,7 +103,11 @@ const TopPicks = () => {
       </div>
 
       <Swiper
-        modules={[Mousewheel, FreeMode]}
+        modules={[Mousewheel, FreeMode, Autoplay]}
+        autoplay={{
+          delay: 2500,
+          disableOnInteraction: false,
+        }}
         onSwiper={(swiper) => {
           swiperRef.current = swiper;
           syncNavState(swiper);
@@ -132,7 +136,7 @@ const TopPicks = () => {
                 />
               </SwiperSlide>
             ))
-          : topPicks.map((pick) => (
+          : topPicks.map((pick, index) => (
               <SwiperSlide
                 key={pick.id}
                 className={cn(slideClassName, "cursor-pointer!")}
@@ -151,7 +155,7 @@ const TopPicks = () => {
                 >
                   <RenderImage
                     url={pick.photo}
-                    className="size-full origin-center object-cover"
+                    className="size-full! origin-center object-cover"
                   />
                   <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent" />
                   <div

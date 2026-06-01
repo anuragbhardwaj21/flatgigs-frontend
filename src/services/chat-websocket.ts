@@ -3,6 +3,9 @@ import type { WsFrame } from "@/store/types/chat";
 
 export type ChatWsEventHandler = (frame: WsFrame<unknown>) => void;
 
+const PING_INTERVAL_MS = 5_000;
+const RECONNECT_DELAY_MS = 5_000;
+
 const getWsBaseUrl = (): string => {
   const explicit = (import.meta.env.VITE_WS_URL ?? "").trim();
   if (explicit) {
@@ -75,60 +78,116 @@ export const createChatWebSocket = (
   onEvent: ChatWsEventHandler,
   onConnectionChange?: (connected: boolean) => void,
 ): ChatWebSocketClient => {
-  const token = getSessionToken();
-  const ws = new WebSocket(buildChatWebSocketUrl(token));
   let released = false;
+  let ws: WebSocket | null = null;
+  let pingInterval: ReturnType<typeof setInterval> | null = null;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-  ws.onopen = () => {
-    if (released) {
-      ws.close(1000, "client_release");
-      return;
+  const clearPingInterval = () => {
+    if (pingInterval) {
+      clearInterval(pingInterval);
+      pingInterval = null;
     }
-    onConnectionChange?.(true);
   };
 
-  ws.onclose = () => {
-    if (!released) onConnectionChange?.(false);
+  const clearReconnectTimer = () => {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
   };
 
-  ws.onerror = () => {
-    if (!released) onConnectionChange?.(false);
+  const startPingInterval = () => {
+    clearPingInterval();
+    pingInterval = setInterval(() => {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      sendFrame(ws, "ping", {});
+    }, PING_INTERVAL_MS);
   };
 
-  ws.onmessage = (event) => {
+  const scheduleReconnect = () => {
+    if (released || reconnectTimer) return;
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      if (!released) connect();
+    }, RECONNECT_DELAY_MS);
+  };
+
+  const connect = () => {
+    clearReconnectTimer();
+    clearPingInterval();
+
     if (released) return;
-    try {
-      const frame = JSON.parse(event.data as string) as WsFrame<unknown>;
-      onEvent(frame);
-    } catch {
-      onEvent({
-        event: "error",
-        envelope: {
-          data: null,
-          success: false,
-          meta: { code: 400, message: "Invalid WebSocket message" },
-        },
-      });
-    }
+
+    const token = getSessionToken();
+    const socket = new WebSocket(buildChatWebSocketUrl(token));
+    ws = socket;
+
+    socket.onopen = () => {
+      if (released) {
+        releaseWebSocket(socket);
+        return;
+      }
+      onConnectionChange?.(true);
+      sendFrame(socket, "ping", {});
+      startPingInterval();
+    };
+
+    socket.onclose = () => {
+      clearPingInterval();
+      if (released) return;
+      onConnectionChange?.(false);
+      ws = null;
+      scheduleReconnect();
+    };
+
+    socket.onerror = () => {
+      if (!released) onConnectionChange?.(false);
+    };
+
+    socket.onmessage = (event) => {
+      if (released) return;
+      try {
+        const frame = JSON.parse(event.data as string) as WsFrame<unknown>;
+        if (frame.event === "pong") return;
+        onEvent(frame);
+      } catch {
+        onEvent({
+          event: "error",
+          envelope: {
+            data: null,
+            success: false,
+            meta: { code: 400, message: "Invalid WebSocket message" },
+          },
+        });
+      }
+    };
   };
+
+  connect();
 
   return {
     sendChatStart(query: string) {
-      sendFrame(ws, "chat.start", { query });
+      if (ws) sendFrame(ws, "chat.start", { query });
     },
     sendChatMessage(message: string) {
-      sendFrame(ws, "chat.message", { message });
+      if (ws) sendFrame(ws, "chat.message", { message });
     },
     sendCancel() {
-      sendFrame(ws, "chat.cancel", {});
+      if (ws) sendFrame(ws, "chat.cancel", {});
     },
     sendPing() {
-      sendFrame(ws, "ping", {});
+      if (ws) sendFrame(ws, "ping", {});
     },
     close() {
       released = true;
-      releaseWebSocket(ws);
+      clearPingInterval();
+      clearReconnectTimer();
+      if (ws) {
+        releaseWebSocket(ws);
+        ws = null;
+      }
     },
-    readyState: () => ws.readyState,
+    readyState: () => ws?.readyState ?? WebSocket.CLOSED,
   };
 };
