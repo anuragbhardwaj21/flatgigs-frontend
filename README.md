@@ -2,7 +2,7 @@
 
 Production-grade React SPA for **FlatGigs** — an AI-native travel discovery and booking experience. Users search stays with traditional filters or natural language, explore results on a map or list, inspect listing details, save favorites, compare properties side-by-side, and interact with a multi-agent AI concierge over WebSocket.
 
-This repository contains the **frontend only**. It communicates with a separate backend UAPI service over REST and WebSocket.
+This repository contains the **frontend only**. It communicates with a separate backend UAPI service over REST and WebSocket
 
 ---
 
