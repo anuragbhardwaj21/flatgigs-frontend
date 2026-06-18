@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-const SESSION_ID_KEY = "flatgigs_session_id";
+const SESSION_ID_KEY = "zavo_session_id";
 
 const createSessionId = () =>
   typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"

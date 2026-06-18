@@ -78,10 +78,10 @@ const schemes = (lightMain: string, darkMain: string): Schemes => ({
 });
 
 /** [lightModePrimary, darkModePrimary] */
-const BRAND_PRIMARY = {
+export const brandPrimaryMap = {
+  orange: ["#FFA500", "#FF5533"],
   blue: ["#2071f5", "#2071f5"],
   green: ["#00D100", "#00D100"],
-  orange: ["#FFA500", "#FF5533"],
   purple: ["#8B5CF6", "#8B5CF6"],
   red: ["#EF4444", "#EF4444"],
   yellow: ["#EAB308", "#EAB308"],
@@ -118,11 +118,13 @@ const BRAND_PRIMARY = {
   midnight: ["#334155", "#64748B"],
 } as const;
 
+export type BrandSchemeKey = keyof typeof brandPrimaryMap;
+
 export const colorSchemeMap = Object.fromEntries(
-  Object.entries(BRAND_PRIMARY).map(([key, value]) => [
+  Object.entries(brandPrimaryMap).map(([key, value]) => [
     key,
     schemes(value[0], value[1]),
   ]),
-) as Record<keyof typeof BRAND_PRIMARY, ReturnType<typeof schemes>>;
+) as Record<BrandSchemeKey, ReturnType<typeof schemes>>;
 
-export type BrandSchemeKey = keyof typeof colorSchemeMap;
+export const brandSchemeKeys = Object.keys(brandPrimaryMap) as BrandSchemeKey[];

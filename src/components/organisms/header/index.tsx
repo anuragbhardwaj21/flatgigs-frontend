@@ -2,15 +2,26 @@ import BrandIcon from "@/components/atoms/brand-icon";
 import { useIcon } from "@/hooks/use-icons";
 import { Button } from "@mui/material";
 import { Link } from "react-router-dom";
+import { IoColorPaletteOutline } from "react-icons/io5";
 
 const Header = () => {
   const IconHeart = useIcon("heart");
   const IconGraph = useIcon("graph");
+
   return (
     <div className="border-b border-dashed p-2 bg-background-paper">
       <div className="main-container flex items-center justify-between">
         <BrandIcon fullMode link />
         <div className="flex items-center gap-2">
+          <Button
+            component={Link}
+            to="/theme"
+            variant="text"
+            color="primary"
+            startIcon={<IoColorPaletteOutline className="text-xl" />}
+          >
+            Theme
+          </Button>
           <Button
             component={Link}
             to="/wishlist"

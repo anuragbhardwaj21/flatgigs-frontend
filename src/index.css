@@ -83,11 +83,23 @@
     @apply border-main/40;
   }
 
-  * {
-    transition:
-      color 150ms ease-in-out,
-      background-color 150ms ease-in-out,
-      border-color 150ms ease-in-out;
+  html[data-theme-scheme-transition="true"] *,
+  html[data-theme-scheme-transition="true"] *::before,
+  html[data-theme-scheme-transition="true"] *::after {
+    transition-property:
+      background-color,
+      border-color,
+      box-shadow,
+      caret-color,
+      color,
+      column-rule-color,
+      fill,
+      outline-color,
+      stroke,
+      text-decoration-color,
+      text-emphasis-color !important;
+    transition-duration: 150ms !important;
+    transition-timing-function: ease-in-out !important;
   }
 }
 

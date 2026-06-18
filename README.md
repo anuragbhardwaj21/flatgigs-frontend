@@ -1,6 +1,6 @@
-# FlatGigs Frontend
+# Zavo Frontend
 
-Production-grade React SPA for **FlatGigs** — an AI-native travel discovery and booking experience. Users search stays with traditional filters or natural language, explore results on a map or list, inspect listing details, save favorites, compare properties side-by-side, and interact with a multi-agent AI concierge over WebSocket.
+Production-grade React SPA for **Zavo** — an AI-native travel discovery and booking experience. Users search stays with traditional filters or natural language, explore results on a map or list, inspect listing details, save favorites, compare properties side-by-side, and interact with a multi-agent AI concierge over WebSocket.
 
 This repository contains the **frontend only**. It communicates with a separate backend UAPI service over REST and WebSocket
 
@@ -28,11 +28,11 @@ This repository contains the **frontend only**. It communicates with a separate 
 
 ### What it does
 
-FlatGigs combines a **Booking.com-style product surface** (search, filters, map, listing pages, reviews, calendars, price quotes) with an **AI travel concierge** that understands natural-language trip requests, runs multi-step agent workflows, and returns ranked stays with citations and rationale.
+Zavo combines a **Booking.com-style product surface** (search, filters, map, listing pages, reviews, calendars, price quotes) with an **AI travel concierge** that understands natural-language trip requests, runs multi-step agent workflows, and returns ranked stays with citations and rationale.
 
 ### Business purpose
 
-Travel search is fragmented: users bounce between tabs, filters, maps, and review pages. FlatGigs reduces that friction by letting users describe what they want in plain language while keeping full control through traditional filters — so discovery feels conversational but booking UX stays familiar and trustworthy.
+Travel search is fragmented: users bounce between tabs, filters, maps, and review pages. Zavo reduces that friction by letting users describe what they want in plain language while keeping full control through traditional filters — so discovery feels conversational but booking UX stays familiar and trustworthy.
 
 ### Core use cases
 
@@ -73,7 +73,7 @@ The app is a **client-rendered SPA** built with Vite and React. State is split d
 
 ```mermaid
 flowchart TB
-  subgraph Browser["Browser (FlatGigs SPA)"]
+  subgraph Browser["Browser (Zavo SPA)"]
     UI["Pages / Views / Components"]
     SearchCtx["SearchContext"]
     ChatCtx["ChatContext"]
@@ -91,7 +91,7 @@ flowchart TB
     ProxyWS["/ws → backend"]
   end
 
-  subgraph Backend["FlatGigs UAPI (external repo)"]
+  subgraph Backend["Zavo UAPI (external repo)"]
     REST["REST /api/v1/*"]
     WSS["WebSocket /ws"]
     Agents["AI agent pipeline"]
@@ -131,7 +131,7 @@ User input (form or chat)
 
 | Integration | Usage |
 | --- | --- |
-| **FlatGigs UAPI** | All listing/search/wishlist/compare data and AI agents. |
+| **Zavo UAPI** | All listing/search/wishlist/compare data and AI agents. |
 | **OpenFreeMap / MapLibre** | Map tiles via `VITE_MAP_STYLE_URL` (default: OpenFreeMap Liberty style). |
 | **Google Fonts** | Manrope typeface (loaded in `index.html`). |
 | **country-state-city** | Location metadata for search inputs. |
@@ -196,7 +196,7 @@ Not applicable in this frontend repository. Listing, review, and wishlist persis
 | --- | --- |
 | Node.js | 22.x (matches CI) |
 | Yarn | 4.x via Corepack |
-| FlatGigs UAPI backend | Running locally or reachable remotely |
+| Zavo UAPI backend | Running locally or reachable remotely |
 
 Enable Corepack once:
 
@@ -209,8 +209,8 @@ corepack enable
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/anuragbhardwaj21/flatgigs-frontend.git
-cd flatgigs-frontend
+git clone https://github.com/anuragbhardwaj21/zavo-frontend.git
+cd zavo-frontend
 ```
 
 2. Copy the environment template:
@@ -253,7 +253,7 @@ VITE_MAP_STYLE_URL=https://tiles.openfreemap.org/styles/liberty
 
 ### Local development setup
 
-1. Start the **FlatGigs UAPI backend** on port `4000` (or update `VITE_API_PROXY_TARGET`).
+1. Start the **Zavo UAPI backend** on port `4000` (or update `VITE_API_PROXY_TARGET`).
 2. From this repo, run the dev server (see [Running the Project](#5-running-the-project)).
 3. Open `http://localhost:5173`.
 
@@ -310,7 +310,7 @@ There is **no automated test runner** configured in this repository yet (no Jest
 ## 6. Folder Structure
 
 ```
-flatgigs-frontend/
+zavo-frontend/
 ├── .github/workflows/
 │   └── deploy-stage.yml      # CI: build + S3 deploy on push to stage
 ├── public/
@@ -457,7 +457,7 @@ There is no login/signup. Identity is established per browser tab:
 
 ```
 Tab opens
-  → sessionStorage: flatgigs_session_id (UUID)
+  → sessionStorage: zavo_session_id (UUID)
   → Sent as X-Token on REST and ?token= on WebSocket
 
 First visit
@@ -791,4 +791,4 @@ yarn preview
 
 **Routes:** `/` · `/results` · `/results/:id` · `/compare` · `/wishlist`
 
-**Related repositories:** FlatGigs UAPI backend (REST + WebSocket + AI agents) — required for full functionality.
+**Related repositories:** Zavo UAPI backend (REST + WebSocket + AI agents) — required for full functionality.

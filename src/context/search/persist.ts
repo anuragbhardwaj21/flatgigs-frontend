@@ -1,7 +1,7 @@
 import { createSearchInitialValues } from "./initial-values";
 import type { SearchInputs } from "./types";
 
-const STORAGE_KEY = "flatgigs_search_inputs";
+const STORAGE_KEY = "zavo_search_inputs";
 
 const isSearchInputs = (value: unknown): value is SearchInputs => {
   if (!value || typeof value !== "object") return false;

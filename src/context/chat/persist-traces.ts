@@ -4,7 +4,7 @@ export type PersistedChatTrace = {
   createdAt: string;
 };
 
-const STORAGE_KEY = "flatgigs_chat_traces";
+const STORAGE_KEY = "zavo_chat_traces";
 const MAX_TRACES = 50;
 
 const isPersistedChatTrace = (value: unknown): value is PersistedChatTrace => {

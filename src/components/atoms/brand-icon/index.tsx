@@ -1,6 +1,6 @@
-import { BsStars } from "react-icons/bs";
 import { Link } from "react-router-dom";
 import cn from "@/utils/cn";
+import IconBrand from "@/assets/brand.svg?react";
 
 const BrandIcon = ({
   fullMode = false,
@@ -11,10 +11,10 @@ const BrandIcon = ({
 }) => {
   const content = (
     <>
-      <p className="active:opacity-70 aspect-square w-fit rounded-xl border-2 border-white/50 bg-main p-2 opacity-80 transition-opacity duration-300 hover:opacity-100">
-        <BsStars className="text-xl" />
+      <p className="active:opacity-70 aspect-square w-fit rounded-xl border-2 border-white/50 bg-main p-1 opacity-80 transition-opacity duration-300 hover:opacity-100">
+        <IconBrand className="size-7!" />
       </p>
-      {fullMode && <span className="text-md font-semibold">FlatGigs</span>}
+      {fullMode && <span className="text-md font-semibold">Zavo</span>}
     </>
   );
 

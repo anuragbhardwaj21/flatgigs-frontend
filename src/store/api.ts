@@ -2,7 +2,7 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithApiResponse } from "./helper/base-query";
 
 export const api = createApi({
-  reducerPath: "flatgigsApi",
+  reducerPath: "zavoApi",
   baseQuery: baseQueryWithApiResponse,
   refetchOnFocus: false,
   refetchOnReconnect: false,
